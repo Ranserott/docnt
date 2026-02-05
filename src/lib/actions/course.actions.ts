@@ -34,6 +34,14 @@ export async function getCourses() {
         userId: session.user.id,
       },
       include: {
+        sections: {
+          where: {
+            active: true,
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
         _count: {
           select: {
             sections: true,
