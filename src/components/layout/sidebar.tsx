@@ -18,41 +18,49 @@ import {
   Files,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useState } from 'react'
+import { logoutAction } from '@/lib/actions/auth.actions'
 
 const navItems = [
   {
     title: 'Dashboard',
     href: '/dashboard',
     icon: Home,
+    color: 'from-blue-500 to-blue-600',
   },
   {
     title: 'Calendario',
     href: '/calendar',
     icon: Calendar,
+    color: 'from-green-500 to-green-600',
   },
   {
     title: 'Cursos',
     href: '/courses',
     icon: BookOpen,
+    color: 'from-purple-500 to-purple-600',
   },
   {
     title: 'Certámenes',
     href: '/exams',
     icon: GraduationCap,
+    color: 'from-orange-500 to-orange-600',
   },
   {
     title: 'Archivos',
     href: '/files',
     icon: Files,
+    color: 'from-pink-500 to-pink-600',
   },
   {
     title: 'Configuración',
     href: '/settings',
     icon: Settings,
+    color: 'from-slate-500 to-slate-600',
   },
 ]
 
@@ -63,42 +71,49 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        'relative flex flex-col border-r bg-background transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
+        'fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-slate-200/50 bg-white shadow-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950',
+        collapsed ? 'w-20' : 'w-72'
       )}
     >
       {/* Header del sidebar */}
-      <div className="flex h-16 items-center justify-between border-b px-4">
+      <div className="flex h-20 items-center justify-between border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-white px-6 dark:border-slate-800 dark:from-slate-900 dark:to-slate-950">
         {!collapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <GraduationCap className="h-5 w-5" />
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30">
+              <GraduationCap className="h-7 w-7" />
             </div>
-            <span className="text-lg">DOCNT</span>
+            <div>
+              <span className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent dark:from-slate-100 dark:to-slate-400">
+                DOCNT
+              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Gestión Docente
+              </p>
+            </div>
           </Link>
         )}
         {collapsed && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30">
+            <GraduationCap className="h-7 w-7" />
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-9 w-9 shrink-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
           onClick={() => setCollapsed(!collapsed)}
         >
           {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           ) : (
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           )}
         </Button>
       </div>
 
       {/* Navegación */}
-      <ScrollArea className="flex-1 px-2 py-4">
-        <nav className="space-y-1">
+      <ScrollArea className="flex-1 px-4 py-6">
+        <nav className="space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -108,14 +123,21 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    ? 'bg-gradient-to-r shadow-md shadow-slate-200/50 dark:shadow-slate-900/50 ' + item.color + ' text-white'
+                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                 )}
               >
-                <Icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{item.title}</span>}
+                <div className={cn(
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-200',
+                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-slate-700'
+                )}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                {!collapsed && (
+                  <span className="truncate">{item.title}</span>
+                )}
               </Link>
             )
           })}
@@ -123,24 +145,40 @@ export function Sidebar() {
       </ScrollArea>
 
       {/* Footer del sidebar */}
-      <div className="border-t p-4">
+      <div className="border-t border-slate-200/50 bg-gradient-to-r from-slate-50 to-white p-4 dark:border-slate-800 dark:from-slate-900 dark:to-slate-950">
         {!collapsed && (
-          <div className="flex items-center gap-3 rounded-lg bg-accent p-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <span className="text-sm font-medium">U</span>
+          <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-slate-100 to-slate-50 p-4 dark:from-slate-800 dark:to-slate-900">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
+              <span className="text-lg font-bold">U</span>
             </div>
-            <div className="flex-1 text-sm">
-              <p className="font-medium">Usuario</p>
-              <p className="text-xs text-muted-foreground">Docente</p>
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Usuario
+              </p>
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                Docente
+              </p>
             </div>
           </div>
         )}
         {collapsed && (
           <div className="flex justify-center">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <span className="text-sm font-medium">U</span>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
+              <span className="text-lg font-bold">U</span>
             </div>
           </div>
+        )}
+        {!collapsed && (
+          <form action={logoutAction} className="mt-3">
+            <Button
+              type="submit"
+              variant="ghost"
+              className="w-full justify-start gap-2 text-slate-600 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </Button>
+          </form>
         )}
       </div>
     </div>

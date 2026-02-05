@@ -16,66 +16,68 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { logoutAction } from '@/lib/actions/auth.actions'
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+    <header className="fixed left-72 right-0 top-0 z-40 flex h-20 items-center gap-4 border-b border-slate-200/50 bg-white/80 px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
       {/* Búsqueda */}
       <div className="flex-1">
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative w-full max-w-lg">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
           <Input
             type="search"
             placeholder="Buscar cursos, eventos, archivos..."
-            className="w-full pl-10"
+            className="h-12 w-full rounded-xl border-slate-200 bg-slate-50 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
       </div>
 
       {/* Acciones */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Notificaciones */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1 top-1 flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-11 w-11 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+          <span className="absolute right-2 top-2 flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
           </span>
         </Button>
 
         {/* Menú de usuario */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Avatar className="h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <Avatar className="h-9 w-9">
                 <AvatarImage src="/avatar.png" alt="Usuario" />
-                <AvatarFallback>
-                  <User className="h-4 w-4" />
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                  <User className="h-5 w-5" />
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56 rounded-xl border-slate-200 dark:border-slate-700">
+            <DropdownMenuLabel className="text-base font-semibold">Mi cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg">
               <User className="mr-2 h-4 w-4" />
               <span>Perfil</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem className="rounded-lg">
               <Settings className="mr-2 h-4 w-4" />
               <span>Configuración</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="w-full text-left relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground text-destructive"
-              >
-                Cerrar sesión
-              </button>
-            </form>
+            <DropdownMenuItem className="rounded-lg text-red-600 focus:text-red-600 dark:text-red-400">
+              Cerrar sesión
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
