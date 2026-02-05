@@ -4,7 +4,6 @@
 
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { Bell, Search, User, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,10 +16,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { signOut } from '@/lib/auth'
+import { logoutAction } from '@/lib/actions/auth.actions'
 
 export function Header() {
-  const router = useRouter()
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
       {/* Búsqueda */}
@@ -70,16 +68,14 @@ export function Header() {
               <span>Configuración</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={async () => {
-                await signOut()
-                router.push('/login')
-                router.refresh()
-              }}
-            >
-              Cerrar sesión
-            </DropdownMenuItem>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="w-full text-left relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground text-destructive"
+              >
+                Cerrar sesión
+              </button>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
