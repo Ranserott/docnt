@@ -108,6 +108,7 @@ export async function createExam(data: {
   courseId: string
   allowRandom?: boolean
   showResults?: boolean
+  fileId?: string
 }) {
   const session = await auth()
 
@@ -126,6 +127,7 @@ export async function createExam(data: {
       return { error: 'No tienes permiso para crear certámenes en este curso' }
     }
 
+    // Crear el certamen
     const exam = await prisma.exam.create({
       data: {
         title: data.title,
@@ -139,6 +141,32 @@ export async function createExam(data: {
         courseId: data.courseId,
       },
     })
+
+    // Si tiene fecha, crear automáticamente un evento en el calendario
+    if (data.date) {
+      // Crear evento para todo el día
+      const startDate = new Date(data.date)
+      startDate.setHours(0, 0, 0, 0)
+
+      const endDate = new Date(data.date)
+      endDate.setHours(23, 59, 59, 999)
+
+      await prisma.event.create({
+        data: {
+          title: `📝 ${data.title}`,
+          description: data.description ? `Certamen: ${data.description}` : `Certamen de ${course.userId ? 'curso' : 'evaluación'}`,
+          type: 'EVALUACION',
+          startDate,
+          endDate,
+          allDay: true,
+          status: 'scheduled',
+          userId: session.user.id,
+          courseId: data.courseId,
+        },
+      })
+
+      revalidatePath('/dashboard/calendar')
+    }
 
     revalidatePath('/dashboard/exams')
     revalidatePath('/dashboard')
@@ -359,6 +387,54 @@ export async function addQuestionToExam(examId: string, questionId: string, orde
 /**
  * Elimina una pregunta de un certamen
  */
+
+/**
+ * Sube un archivo PDF y lo asocia a un certamen
+ */
+export async function uploadExamFile(data: {
+  name: string
+  url: string
+  size: number
+  courseId: string
+}) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: 'No autorizado' }
+  }
+
+  try {
+    // Verificar que el curso pertenece al usuario
+    const course = await prisma.course.findUnique({
+      where: { id: data.courseId },
+      select: { userId: true },
+    })
+
+    if (!course || course.userId !== session.user.id) {
+      return { error: 'No tienes permiso para subir archivos a este curso' }
+    }
+
+    const file = await prisma.file.create({
+      data: {
+        name: data.name,
+        filename: data.name,
+        mimeType: 'application/pdf',
+        size: data.size,
+        url: data.url,
+        userId: session.user.id,
+        courseId: data.courseId,
+        version: 1,
+      },
+    })
+
+    revalidatePath('/dashboard/exams')
+
+    return { data: file }
+  } catch (error) {
+    console.error('Error al subir archivo:', error)
+    return { error: 'Error al subir archivo' }
+  }
+}
 export async function removeQuestionFromExam(examId: string, questionId: string) {
   const session = await auth()
 

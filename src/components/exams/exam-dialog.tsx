@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createExam } from '@/lib/actions/exam.actions'
 import { useRouter } from 'next/navigation'
+import { Upload, Link as LinkIcon, X } from 'lucide-react'
 
 interface ExamDialogProps {
   open: boolean
@@ -32,6 +33,8 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
     allowRandom: false,
     showResults: false,
   })
+  const [fileUrl, setFileUrl] = useState('')
+  const [fileName, setFileName] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,9 +61,11 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
     }
   }
 
+  const selectedCourse = courses.find((c) => c.id === formData.courseId)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Nuevo Certamen</DialogTitle>
           <DialogDescription>
@@ -97,16 +102,27 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
               <SelectContent>
                 {courses.map((course) => (
                   <SelectItem key={course.id} value={course.id}>
-                    {course.name} {course.code && `(${course.code})`}
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: course.color || '#f97316' }}
+                      />
+                      {course.name} {course.code && `(${course.code})`}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Fecha */}
+          {/* Fecha - Creará evento automáticamente en calendario */}
           <div className="space-y-2">
-            <Label htmlFor="date">Fecha de aplicación</Label>
+            <Label htmlFor="date">
+              Fecha de aplicación
+              <span className="ml-2 text-xs text-orange-600 dark:text-orange-400">
+                (Se agregará automáticamente al calendario)
+              </span>
+            </Label>
             <Input
               id="date"
               type="date"
@@ -142,6 +158,51 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
               className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
           </div>
+
+          {/* Archivo del certamen (URL) */}
+          {selectedCourse && (
+            <div className="space-y-2">
+              <Label>Archivo del certamen (opcional)</Label>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Pega la URL de tu archivo (Google Drive, Dropbox, etc.)
+              </p>
+              {fileName ? (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
+                  <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  <span className="flex-1 text-sm truncate">{fileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFileUrl('')
+                      setFileName('')
+                    }}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    value={fileUrl}
+                    onChange={(e) => setFileUrl(e.target.value)}
+                    placeholder="https://drive.google.com/..."
+                    className="rounded-xl flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setFileName(fileUrl.split('/').pop() || 'Archivo')}
+                    disabled={!fileUrl}
+                    className="rounded-xl"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Opciones adicionales */}
           <div className="space-y-3">
