@@ -58,6 +58,7 @@ export function EventDialog({ open, onOpenChange, event, date, courses }: EventD
         endDate: formData.endDate ? new Date(formData.endDate) : undefined,
         courseId: formData.courseId || undefined,
         sectionId: formData.sectionId || undefined,
+        status: 'scheduled',
       }
 
       if (event) {
