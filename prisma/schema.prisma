@@ -1,0 +1,324 @@
+// ==================== USUARIOS Y AUTENTICACIÓN ====================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DOCENTE
+  AYUDANTE
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // Para autenticación con Credentials
+  role          Role      @default(DOCENTE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relaciones
+  accounts      Account[]
+  sessions      Session[]
+  courses       Course[]
+  events        Event[]
+  exams         Exam[]
+  files         File[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==================== CURSOS Y SECCIONES ====================
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  code        String?  // Ej: "MAT101"
+  period      String   // Ej: "2025-1", "2025-Otoño"
+  color       String?  // Para UI (calendario)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sections    Section[]
+  events      Event[]
+  exams       Exam[]
+  files       File[]
+
+  @@index([userId])
+  @@map("courses")
+}
+
+model Section {
+  id          String   @id @default(cuid())
+  name        String   // Ej: "Sección 1", "Lunes-Wednesday"
+  room        String?  // Sala asignada
+  schedule    Json?    // Horario estructurado: [{"day": "Lunes", "start": "08:30", "end": "10:00"}]
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  events      Event[]
+
+  @@index([courseId])
+  @@map("sections")
+}
+
+// ==================== CALENDARIO ACADÉMICO (CORE) ====================
+
+enum EventType {
+  CLASE       // Clase regular
+  EVALUACION  // Certamen, prueba, quiz
+  ENTREGA     // Fecha de entrega de tarea
+  REUNION     // Reunión con alumnos, colleagues
+  OTRO        // Otro tipo de evento
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  type        EventType @default(CLASE)
+
+  // Fechas y horarios
+  startDate   DateTime
+  endDate     DateTime?
+  allDay      Boolean   @default(false)
+
+  // Contenido del evento
+  notes       String?   @db.Text     // Notas de planificación (privadas)
+  observations String?  @db.Text     // Observaciones post-clase
+  location    String?                 // Sala o ubicación
+
+  // Estado
+  status      String    @default("scheduled") // scheduled, completed, cancelled
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relaciones
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId    String?
+  course      Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  sectionId   String?
+  section     Section?  @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  // Muchos a muchos
+  tags        EventTag[]
+  files       EventFile[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([startDate])
+  @@map("events")
+}
+
+// ==================== ETIQUETAS ====================
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String?  // Hex color para UI
+  createdAt DateTime @default(now())
+
+  // Relaciones
+  events    EventTag[]
+
+  @@map("tags")
+}
+
+model EventTag {
+  eventId   String
+  tagId     String
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tag       Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, tagId])
+  @@map("event_tags")
+}
+
+// ==================== ARCHIVOS Y NOTAS ====================
+
+model File {
+  id          String   @id @default(cuid())
+  name        String
+  filename    String   // Nombre en storage
+  mimeType    String
+  size        Int      // Bytes
+  url         String   // URL pública (Vercel Blob)
+
+  // Contenido opcional
+  description String?
+  content     String?  @db.Text // Para notas en Markdown
+
+  // Versionado
+  version     Int      @default(1)
+  parentFileId String? // Para versionado futuro
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  // Muchos a muchos
+  events      EventFile[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("files")
+}
+
+model EventFile {
+  eventId   String
+  fileId    String
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  file      File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, fileId])
+  @@map("event_files")
+}
+
+// ==================== GENERADOR DE CERTÁMENES ====================
+
+enum QuestionType {
+  ALTERNATIVAS  // Múltiple choice
+  DESARROLLO    // Respuesta abierta
+  VERDADERO_FALSO
+  EMPAREJAMIENTO
+}
+
+enum Difficulty {
+  FACIL
+  MEDIO
+  DIFICIL
+}
+
+model Question {
+  id          String        @id @default(cuid())
+  content     String        @db.Text
+  type        QuestionType
+  difficulty  Difficulty
+  unit        String?       // Unidad temática
+  points      Int           @default(1)
+
+  // Para alternativas
+  options     Json?         // ["A", "B", "C", "D"]
+  correctAnswer String?     @db.Text
+
+  // Metadatos
+  tags        String[]      // Para búsqueda y filtrado
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Muchos a muchos con exams
+  exams       ExamQuestion[]
+
+  @@map("questions")
+}
+
+model Exam {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  date        DateTime?
+  duration    Int?     // Minutos
+  totalPoints Int      @default(0)
+
+  // Configuración
+  allowRandom Boolean  @default(false) // Permitir orden aleatorio
+  showResults Boolean  @default(false) // Mostrar resultados a alumnos
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Muchos a muchos con preguntas
+  questions   ExamQuestion[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("exams")
+}
+
+// Tabla pivot con atributos adicionales
+model ExamQuestion {
+  examId      String
+  questionId  String
+  order       Int      // Orden en el examen
+  points      Int      // Puntaje específico para este examen
+
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([examId, questionId])
+  @@map("exam_questions")
+}

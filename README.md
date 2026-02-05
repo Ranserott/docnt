@@ -1,36 +1,166 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DOCNT - Sistema de Gestión Docente Personal
 
-## Getting Started
+Plataforma web para que un docente pueda planificar y organizar clases, gestionar archivos, y generar certámenes.
 
-First, run the development server:
+## Características
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Calendario Académico**: Planifica clases, evaluaciones y eventos con vista mensual/semanal
+- **Gestión de Cursos**: Organiza cursos por periodos con secciones y horarios
+- **Archivos y Notas**: Adjunta archivos y notas a cada evento o curso
+- **Generador de Certámenes**: Crea evaluaciones con banco de preguntas
+- **Diseño Moderno**: Interfaz elegante con sidebar y responsive design
+
+## Stack Tecnológico
+
+- **Frontend**: Next.js 14 (App Router), React, TypeScript
+- **Estilos**: Tailwind CSS, shadcn/ui
+- **Backend**: Server Actions, API Routes
+- **Database**: PostgreSQL, Prisma ORM
+- **Auth**: NextAuth.js v5
+- **Validación**: Zod, React Hook Form
+
+## Estructura del Proyecto
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Rutas de autenticación
+│   ├── (dashboard)/       # Rutas principales protegidas
+│   ├── api/               # API routes
+│   └── layout.tsx         # Root layout
+├── components/            # Componentes React
+│   ├── ui/               # Componentes base (shadcn/ui)
+│   ├── layout/           # Sidebar, header
+│   ├── calendar/         # Componentes del calendario
+│   ├── courses/          # Componentes de cursos
+│   └── exams/            # Componentes de exámenes
+├── lib/                  # Lógica de negocio
+│   ├── db/               # Prisma client
+│   ├── actions/          # Server Actions
+│   ├── services/         # Servicios de dominio
+│   ├── validations/      # Esquemas Zod
+│   └── utils/            # Utilidades
+├── types/                # TypeScript types
+└── config/               # Configuraciones
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Instalación
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clonar el repositorio**
+   ```bash
+   git clone <repo-url>
+   cd docnt
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
 
-## Learn More
+3. **Configurar variables de entorno**
+   ```bash
+   cp .env.example .env.local
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+   Editar `.env.local` con tus credenciales:
+   ```env
+   DATABASE_URL="postgresql://user:password@localhost:5432/docnt"
+   NEXTAUTH_SECRET="tu-secreto-aqui"
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. **Ejecutar migraciones de Prisma**
+   ```bash
+   npx prisma migrate dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   O en producción:
+   ```bash
+   npx prisma migrate deploy
+   npx prisma generate
+   ```
 
-## Deploy on Vercel
+5. **Iniciar el servidor de desarrollo**
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+6. **Abrir en el navegador**
+   ```
+   http://localhost:3000
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Módulos Implementados
+
+### ✅ Fundamentos (Fase 1)
+- [x] Next.js 14 con App Router
+- [x] TypeScript configurado
+- [x] Tailwind CSS + shadcn/ui
+- [x] Prisma + PostgreSQL schema
+- [x] NextAuth.js v5 configuración
+- [x] Layout base con sidebar
+
+### ✅ Cursos y Secciones (Fase 2)
+- [x] Listado de cursos
+- [x] Vista detallada de curso
+- [x] Server Actions para CRUD
+
+### ✅ Calendario (Fase 3)
+- [x] Vista mensual
+- [x] Server Actions para eventos
+- [x] Integración con cursos
+
+### 🚧 Pendiente
+- [ ] Formularios de creación/edición
+- [ ] Sistema de archivos y storage
+- [ ] Generador de certámenes
+- [ ] Login funcional con OAuth
+
+## Scripts Disponibles
+
+```bash
+# Desarrollo
+npm run dev
+
+# Build de producción
+npm run build
+
+# Iniciar producción
+npm start
+
+# Linter
+npm run lint
+
+# Prisma
+npx prisma studio          # UI de base de datos
+npx prisma migrate dev     # Crear migración
+npx prisma generate        # Generar client
+```
+
+## Deployment
+
+### Vercel (Recomendado)
+
+1. Conectar tu repositorio a Vercel
+2. Configurar las variables de entorno
+3. Deploy automático en cada push a main
+
+### Base de Datos
+
+Usar **Vercel Postgres** para producción:
+- Plan free disponible
+- Conexión directa desde Prisma
+- Backup automático
+
+## Contribuir
+
+Este es un proyecto personal. Si quieres contribuir:
+1. Fork el proyecto
+2. Crea una rama para tu feature
+3. Commit tus cambios
+4. Push a la rama
+5. Abre un Pull Request
+
+## Licencia
+
+MIT License - ver archivo LICENSE para detalles
