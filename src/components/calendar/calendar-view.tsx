@@ -38,6 +38,14 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewingEvent, setViewingEvent] = useState<any>(null)
 
+  // Función para recargar eventos
+  const reloadEvents = async () => {
+    const result = await getEvents()
+    if (result.data) {
+      setEvents(result.data)
+    }
+  }
+
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
@@ -251,6 +259,7 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
         event={selectedEvent}
         date={selectedDate || undefined}
         courses={courses}
+        onEventCreated={reloadEvents}
       />
 
       {/* Modal de ver evento */}

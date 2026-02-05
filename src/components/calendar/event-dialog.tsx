@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createEvent, updateEvent, getEvents } from '@/lib/actions/calendar.actions'
+import { createEvent, updateEvent } from '@/lib/actions/calendar.actions'
 import { useRouter } from 'next/navigation'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 const eventTypes = [
   { value: 'CLASE', label: 'Clase', color: 'bg-green-500' },
@@ -27,18 +29,17 @@ interface EventDialogProps {
   event?: any
   date?: Date
   courses: any[]
+  onEventCreated?: () => void
 }
 
-export function EventDialog({ open, onOpenChange, event, date, courses }: EventDialogProps) {
+export function EventDialog({ open, onOpenChange, event, date, courses, onEventCreated }: EventDialogProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: event?.title || '',
     description: event?.description || '',
     type: event?.type || 'CLASE',
-    startDate: event?.startDate ? new Date(event.startDate).toISOString().slice(0, 16) : (date ? date.toISOString().slice(0, 16) : ''),
-    endDate: event?.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
-    allDay: event?.allDay || false,
+    allDay: true,
     location: event?.location || '',
     notes: event?.notes || '',
     courseId: event?.courseId || '',
@@ -52,10 +53,20 @@ export function EventDialog({ open, onOpenChange, event, date, courses }: EventD
     setLoading(true)
 
     try {
+      // Usar la fecha seleccionada o la del evento existente
+      const eventDate = event ? new Date(event.startDate) : (date || new Date())
+
+      // Crear evento para todo el día (desde 00:00 hasta 23:59 del mismo día)
+      const startDate = new Date(eventDate)
+      startDate.setHours(0, 0, 0, 0)
+
+      const endDate = new Date(eventDate)
+      endDate.setHours(23, 59, 59, 999)
+
       const data = {
         ...formData,
-        startDate: new Date(formData.startDate),
-        endDate: formData.endDate ? new Date(formData.endDate) : undefined,
+        startDate,
+        endDate,
         courseId: formData.courseId || undefined,
         sectionId: formData.sectionId || undefined,
         status: 'scheduled',
@@ -68,6 +79,7 @@ export function EventDialog({ open, onOpenChange, event, date, courses }: EventD
       }
 
       onOpenChange(false)
+      onEventCreated?.()
       router.refresh()
     } catch (error) {
       console.error('Error al guardar evento:', error)
@@ -78,17 +90,22 @@ export function EventDialog({ open, onOpenChange, event, date, courses }: EventD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">
             {event ? 'Editar Evento' : 'Nuevo Evento'}
           </DialogTitle>
           <DialogDescription>
-            {event ? 'Modifica los detalles del evento' : 'Completa los datos para crear un nuevo evento'}
+            {date && !event && (
+              <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                {format(date, 'EEEE d MMMM, yyyy', { locale: es })}
+              </span>
+            )}
+            {event && 'Modifica los detalles del evento'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Título */}
           <div className="space-y-2">
             <Label htmlFor="title">Título *</Label>
@@ -99,6 +116,7 @@ export function EventDialog({ open, onOpenChange, event, date, courses }: EventD
               placeholder="Ej: Clase de Matemáticas"
               required
               className="rounded-xl"
+              autoFocus
             />
           </div>
 
@@ -125,43 +143,6 @@ export function EventDialog({ open, onOpenChange, event, date, courses }: EventD
             </Select>
           </div>
 
-          {/* Fecha y hora */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Fecha inicio *</Label>
-              <Input
-                id="startDate"
-                type="datetime-local"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-                className="rounded-xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">Fecha término</Label>
-              <Input
-                id="endDate"
-                type="datetime-local"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
-          </div>
-
-          {/* Todo el día */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="allDay"
-              checked={formData.allDay}
-              onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            <Label htmlFor="allDay">Todo el día</Label>
-          </div>
-
           {/* Curso */}
           <div className="space-y-2">
             <Label htmlFor="course">Curso relacionado</Label>
@@ -183,7 +164,7 @@ export function EventDialog({ open, onOpenChange, event, date, courses }: EventD
           </div>
 
           {/* Sección */}
-          {selectedCourse && selectedCourse.sections.length > 0 && (
+          {selectedCourse && selectedCourse.sections && selectedCourse.sections.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="section">Sección</Label>
               <Select

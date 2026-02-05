@@ -103,7 +103,7 @@ export default function DashboardPage() {
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
               Comienza organizando un nuevo curso
             </p>
-            <Link href="/courses">
+            <Link href="/dashboard/courses">
               <Button className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50">
                 Ir a Cursos
               </Button>
@@ -119,7 +119,7 @@ export default function DashboardPage() {
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
               Planifica una clase o evaluación
             </p>
-            <Link href="/calendar">
+            <Link href="/dashboard/calendar">
               <Button className="w-full rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 hover:shadow-green-500/50">
                 Ir a Calendario
               </Button>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
               Genera una evaluación nueva
             </p>
-            <Link href="/exams">
+            <Link href="/dashboard/exams">
               <Button className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50">
                 Ir a Certámenes
               </Button>
@@ -155,12 +155,12 @@ export default function DashboardPage() {
             Comienza creando tu primer curso y empieza a organizar tu docencia de manera eficiente.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/courses">
+            <Link href="/dashboard/courses">
               <Button className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50">
                 Crear Curso
               </Button>
             </Link>
-            <Link href="/settings">
+            <Link href="/dashboard/settings">
               <Button variant="outline" className="rounded-xl border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800">
                 Configurar Perfil
               </Button>
