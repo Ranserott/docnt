@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  CheckSquare,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -49,6 +50,12 @@ const navItems = [
     href: '/dashboard/exams',
     icon: GraduationCap,
     color: 'from-orange-500 to-orange-600',
+  },
+  {
+    title: 'Notas',
+    href: '/dashboard/grades',
+    icon: CheckSquare,
+    color: 'from-cyan-500 to-cyan-600',
   },
   {
     title: 'Archivos',

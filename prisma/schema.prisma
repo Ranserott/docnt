@@ -33,6 +33,8 @@ model User {
   events        Event[]
   exams         Exam[]
   files         File[]
+  students      Student[]       // Alumnos
+  rubrics       GradingRubric[]  // Pautas de corrección
 
   @@map("users")
 }
@@ -95,6 +97,7 @@ model Course {
   events      Event[]
   exams       Exam[]
   files       File[]
+  students    Student[] // Alumnos del curso
 
   @@index([userId])
   @@map("courses")
@@ -304,6 +307,10 @@ model Exam {
   // Muchos a muchos con preguntas
   questions   ExamQuestion[]
 
+  // Nuevas relaciones para notas
+  grades      Grade[]        // Notas de alumnos
+  rubric      GradingRubric? // Pauta de corrección
+
   @@index([userId])
   @@index([courseId])
   @@map("exams")
@@ -321,4 +328,93 @@ model ExamQuestion {
 
   @@id([examId, questionId])
   @@map("exam_questions")
+}
+
+// ==================== ALUMNOS Y NOTAS ====================
+
+model Student {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?  @unique
+  studentCode String?  @unique // Código o RUT del alumno
+  active      Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Muchos a muchos con exams a través de grades
+  grades      Grade[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("students")
+}
+
+model Grade {
+  id          String   @id @default(cuid())
+  score       Float    // Puntaje obtenido
+  grade       Float?   // Nota final (1.0 - 7.0)
+  status      String   @default("pending") // pending, graded, auto_graded
+
+  // Respuestas del alumno (imagen o JSON)
+  answersUrl  String?  // URL de la imagen del examen
+  answersData Json?    // Respuestas detectadas por visión
+
+  // Corrección
+  correctedAt DateTime?
+  correctedBy String?  // ID del usuario que corrigió
+  feedback    String?  @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  examId      String
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@index([examId])
+  @@index([studentId])
+  @@map("grades")
+}
+
+// ==================== PAUTAS DE CORRECCIÓN ====================
+
+model GradingRubric {
+  id          String   @id @default(cuid())
+  name        String   // Ej: "Certamen 1 - Pauta"
+
+  // Pauta en formato JSON: {"1": "A", "2": "B", "3": "C"}
+  // Donde la clave es el número de pregunta y el valor es la respuesta correcta
+  rubric      Json
+
+  // Puntaje por pregunta: {"1": 2, "2": 2, "3": 1}
+  points      Json?
+
+  // URL de la imagen de la pauta (para referencia visual)
+  imageUrl    String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  examId      String   @unique
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([examId])
+  @@map("grading_rubrics")
 }
