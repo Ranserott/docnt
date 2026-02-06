@@ -38,9 +38,10 @@ export default function GradesPage() {
 
   // Formularios
   const [studentForm, setStudentForm] = useState({ name: '', email: '', studentCode: '' })
-  const [rubricForm, setRubricForm] = useState({ name: '', rubric: '{}', points: '{}', imageUrl: '' })
+  const [rubricForm, setRubricForm] = useState({ name: '', rubric: '{}', points: '{}', imageUrl: '', imageFile: null as File | null })
   const [gradingForm, setGradingForm] = useState({ imageUrl: '', rubric: '{}', points: '{}', imageFile: null as File | null })
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const rubricFileInputRef = useRef<HTMLInputElement>(null)
 
   // Subir imagen y obtener URL
   const uploadImage = async (file: File): Promise<string> => {
@@ -77,14 +78,42 @@ export default function GradesPage() {
     }
   }
 
+  const handleRubricFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setRubricForm({ ...rubricForm, imageFile: file })
+
+    try {
+      setLoading(true)
+      const url = await uploadImage(file)
+      setRubricForm({ ...rubricForm, imageUrl: url, imageFile: file })
+    } catch (error) {
+      alert('Error al subir la imagen')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleCameraCapture = async () => {
     fileInputRef.current?.click()
+  }
+
+  const handleRubricCameraCapture = async () => {
+    rubricFileInputRef.current?.click()
   }
 
   const clearImage = () => {
     setGradingForm({ ...gradingForm, imageUrl: '', imageFile: null })
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  const clearRubricImage = () => {
+    setRubricForm({ ...rubricForm, imageUrl: '', imageFile: null })
+    if (rubricFileInputRef.current) {
+      rubricFileInputRef.current.value = ''
     }
   }
 
@@ -166,6 +195,13 @@ export default function GradesPage() {
   const handleSaveRubric = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      // Si hay un archivo sin subir, subirlo primero
+      let imageUrl = rubricForm.imageUrl
+      if (rubricForm.imageFile && !imageUrl) {
+        imageUrl = await uploadImage(rubricForm.imageFile)
+        setRubricForm({ ...rubricForm, imageUrl })
+      }
+
       const rubricData = JSON.parse(rubricForm.rubric)
       const pointsData = rubricForm.points ? JSON.parse(rubricForm.points) : undefined
 
@@ -174,7 +210,7 @@ export default function GradesPage() {
         name: rubricForm.name,
         rubric: rubricData,
         points: pointsData,
-        imageUrl: rubricForm.imageUrl || undefined,
+        imageUrl: imageUrl || undefined,
       })
 
       setRubricDialogOpen(false)
@@ -468,7 +504,10 @@ export default function GradesPage() {
       </Dialog>
 
       {/* Dialog: Configurar Pauta */}
-      <Dialog open={rubricDialogOpen} onOpenChange={setRubricDialogOpen}>
+      <Dialog open={rubricDialogOpen} onOpenChange={(open) => {
+        setRubricDialogOpen(open)
+        if (!open) clearRubricImage()
+      }}>
         <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurar Pauta de Corrección</DialogTitle>
@@ -517,15 +556,68 @@ export default function GradesPage() {
                 rows={2}
               />
             </div>
+
+            {/* Upload de imagen de la pauta */}
             <div>
-              <Label htmlFor="imageUrl">URL de imagen de la pauta (opcional)</Label>
-              <Input
-                id="imageUrl"
-                value={rubricForm.imageUrl}
-                onChange={(e) => setRubricForm({ ...rubricForm, imageUrl: e.target.value })}
-                placeholder="https://..."
-                className="rounded-xl"
+              <Label>Imagen de la pauta (opcional)</Label>
+              <input
+                ref={rubricFileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleRubricFileSelect}
+                className="hidden"
+                id="rubric-image-input"
               />
+
+              {rubricForm.imageUrl ? (
+                <div className="relative mt-2">
+                  <img
+                    src={rubricForm.imageUrl}
+                    alt="Pauta"
+                    className="w-full h-auto rounded-xl border border-slate-200 dark:border-slate-800"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={clearRubricImage}
+                    className="absolute top-2 right-2 rounded-full shadow-lg"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => rubricFileInputRef.current?.click()}
+                    className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
+                  >
+                    <Upload className="h-6 w-6" />
+                    <span className="text-sm">Subir archivo</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleRubricCameraCapture}
+                    className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
+                  >
+                    <Camera className="h-6 w-6" />
+                    <span className="text-sm">Tomar foto</span>
+                  </Button>
+                </div>
+              )}
+
+              {rubricForm.imageFile && !rubricForm.imageUrl && (
+                <div className="mt-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800 dark:text-blue-200">
+                    {rubricForm.imageFile.name}
+                  </span>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRubricDialogOpen(false)} className="rounded-xl">

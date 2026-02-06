@@ -123,10 +123,11 @@ export function Sidebar() {
 
       <div
         className={cn(
-          'fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-slate-200/50 bg-white shadow-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950',
-          collapsed && !isMobile ? 'w-20' : 'w-72',
-          isMobile && !mobileOpen && '-translate-x-full',
-          isMobile ? 'translate-x-0 transition-transform' : ''
+          'fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-slate-200/50 bg-white shadow-xl transition-transform duration-300 dark:border-slate-800 dark:bg-slate-950',
+          // Ancho
+          !isMobile && collapsed ? 'w-20' : 'w-72',
+          // Posición en móvil
+          isMobile && !mobileOpen ? '-translate-x-full' : 'translate-x-0'
         )}
       >
       {/* Header del sidebar */}
