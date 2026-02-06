@@ -336,7 +336,7 @@ export default function GradesPage() {
                             }}
                             className="rounded-lg"
                           >
-                            {grade ? <Eye className="h-4 w-4" : <CheckSquare className="h-4 w-4" />}
+                            {grade ? <Eye className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
                           </Button>
                         </TableCell>
                       </TableRow>
