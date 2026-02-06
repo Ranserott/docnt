@@ -20,10 +20,12 @@ import {
   ChevronRight,
   LogOut,
   CheckSquare,
+  Menu,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { logoutAction } from '@/lib/actions/auth.actions'
 
 const navItems = [
@@ -74,14 +76,59 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detectar pantalla móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024)
+      if (window.innerWidth < 1024) {
+        setCollapsed(false)
+      }
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Cerrar sidebar móvil al cambiar ruta
+  useEffect(() => {
+    if (isMobile) {
+      setMobileOpen(false)
+    }
+  }, [pathname, isMobile])
 
   return (
-    <div
-      className={cn(
-        'fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-slate-200/50 bg-white shadow-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950',
-        collapsed ? 'w-20' : 'w-72'
+    <>
+      {/* Botón móvil - hamburguesa */}
+      {isMobile && (
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="fixed top-4 left-4 z-50 p-2 rounded-xl bg-white dark:bg-slate-950 shadow-lg border border-slate-200 dark:border-slate-800 lg:hidden"
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       )}
-    >
+
+      {/* Overlay para móvil */}
+      {isMobile && mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <div
+        className={cn(
+          'fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-slate-200/50 bg-white shadow-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950',
+          collapsed && !isMobile ? 'w-20' : 'w-72',
+          isMobile && !mobileOpen && '-translate-x-full',
+          isMobile ? 'translate-x-0 transition-transform' : ''
+        )}
+      >
       {/* Header del sidebar */}
       <div className="flex h-20 items-center justify-between border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-white px-6 dark:border-slate-800 dark:from-slate-900 dark:to-slate-950">
         {!collapsed && (
@@ -153,6 +200,17 @@ export function Sidebar() {
 
       {/* Footer del sidebar */}
       <div className="border-t border-slate-200/50 bg-gradient-to-r from-slate-50 to-white p-4 dark:border-slate-800 dark:from-slate-900 dark:to-slate-950">
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileOpen(false)}
+            className="w-full mb-3 rounded-lg"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Cerrar menú
+          </Button>
+        )}
         {!collapsed && (
           <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-slate-100 to-slate-50 p-4 dark:from-slate-800 dark:to-slate-900">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
@@ -189,5 +247,6 @@ export function Sidebar() {
         )}
       </div>
     </div>
+    </>
   )
 }

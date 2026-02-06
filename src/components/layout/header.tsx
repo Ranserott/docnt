@@ -19,31 +19,34 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export function Header() {
   return (
-    <header className="fixed left-72 right-0 top-0 z-40 flex h-20 items-center gap-4 border-b border-slate-200/50 bg-white/80 px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
-      {/* Búsqueda */}
-      <div className="flex-1">
+    <header className="fixed left-0 lg:left-72 right-0 top-0 z-40 flex h-16 lg:h-20 items-center gap-2 lg:gap-4 border-b border-slate-200/50 bg-white/80 px-4 lg:px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
+      {/* Espaciador para el botón móvil en móviles */}
+      <div className="w-12 lg:hidden"></div>
+
+      {/* Búsqueda - ocultar en móviles pequeños */}
+      <div className="flex-1 hidden md:block">
         <div className="relative w-full max-w-lg">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
           <Input
             type="search"
             placeholder="Buscar cursos, eventos, archivos..."
-            className="h-12 w-full rounded-xl border-slate-200 bg-slate-50 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+            className="h-10 lg:h-12 w-full rounded-xl border-slate-200 bg-slate-50 pl-12 pr-4 text-sm lg:text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
       </div>
 
       {/* Acciones */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 lg:gap-3">
         {/* Notificaciones */}
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-11 w-11 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="relative h-9 w-9 lg:h-11 lg:w-11 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
         >
-          <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-          <span className="absolute right-2 top-2 flex h-2.5 w-2.5">
+          <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-slate-600 dark:text-slate-400" />
+          <span className="absolute right-1.5 top-1.5 lg:right-2 lg:top-2 flex h-2 w-2 lg:h-2.5 lg:w-2.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
+            <span className="relative inline-flex h-2 w-2 lg:h-2.5 lg:w-2.5 rounded-full bg-red-500"></span>
           </span>
         </Button>
 
@@ -53,12 +56,12 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-11 w-11 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="h-9 w-9 lg:h-11 lg:w-11 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              <Avatar className="h-9 w-9">
+              <Avatar className="h-7 w-7 lg:h-9 lg:w-9">
                 <AvatarImage src="/avatar.png" alt="Usuario" />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                  <User className="h-5 w-5" />
+                  <User className="h-3 w-3 lg:h-5 lg:w-5" />
                 </AvatarFallback>
               </Avatar>
             </Button>

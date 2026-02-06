@@ -4,14 +4,14 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, CheckSquare, Camera, Save, Users, FileText, Upload, Eye } from 'lucide-react'
+import { Plus, CheckSquare, Camera, Save, Users, FileText, Upload, Eye, Image as ImageIcon, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getCourses } from '@/lib/actions/course.actions'
 import { getExams } from '@/lib/actions/exam.actions'
@@ -39,7 +39,54 @@ export default function GradesPage() {
   // Formularios
   const [studentForm, setStudentForm] = useState({ name: '', email: '', studentCode: '' })
   const [rubricForm, setRubricForm] = useState({ name: '', rubric: '{}', points: '{}', imageUrl: '' })
-  const [gradingForm, setGradingForm] = useState({ imageUrl: '', rubric: '{}', points: '{}' })
+  const [gradingForm, setGradingForm] = useState({ imageUrl: '', rubric: '{}', points: '{}', imageFile: null as File | null })
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Subir imagen y obtener URL
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('Error al subir la imagen')
+    }
+
+    const data = await response.json()
+    return data.url
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setGradingForm({ ...gradingForm, imageFile: file })
+
+    try {
+      setLoading(true)
+      const url = await uploadImage(file)
+      setGradingForm({ ...gradingForm, imageUrl: url, imageFile: file })
+    } catch (error) {
+      alert('Error al subir la imagen')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCameraCapture = async () => {
+    fileInputRef.current?.click()
+  }
+
+  const clearImage = () => {
+    setGradingForm({ ...gradingForm, imageUrl: '', imageFile: null })
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   useEffect(() => {
     loadCourses()
@@ -140,6 +187,19 @@ export default function GradesPage() {
   const handleAutoGrade = async () => {
     setLoading(true)
     try {
+      // Si hay un archivo sin subir, subirlo primero
+      let imageUrl = gradingForm.imageUrl
+      if (gradingForm.imageFile && !imageUrl) {
+        imageUrl = await uploadImage(gradingForm.imageFile)
+        setGradingForm({ ...gradingForm, imageUrl })
+      }
+
+      if (!imageUrl) {
+        alert('Por favor selecciona o toma una foto del examen')
+        setLoading(false)
+        return
+      }
+
       const rubricData = rubric ? rubric.rubric : JSON.parse(gradingForm.rubric)
       const pointsData = rubric ? rubric.points : JSON.parse(gradingForm.points)
 
@@ -147,7 +207,7 @@ export default function GradesPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageUrl: gradingForm.imageUrl,
+          imageUrl: imageUrl,
           rubric: rubricData,
           points: pointsData,
         }),
@@ -165,12 +225,13 @@ export default function GradesPage() {
             score: result.totalScore,
             grade: result.grade,
             status: 'auto_graded',
-            answersUrl: gradingForm.imageUrl,
+            answersUrl: imageUrl,
             answersData: result.answers,
           })
           loadGrades()
         }
         setGradeDialogOpen(false)
+        clearImage()
         alert(`Corrección completada!\n\nPuntaje: ${result.totalScore}/${result.maxScore}\nNota: ${result.grade}`)
       } else {
         alert('Error en la corrección: ' + result.error)
@@ -199,8 +260,8 @@ export default function GradesPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-4 items-end">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-end">
+        <div className="flex-1 min-w-[200px]">
           <Label>Curso</Label>
           <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
             <SelectTrigger className="rounded-xl">
@@ -219,7 +280,7 @@ export default function GradesPage() {
           </Select>
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-[200px]">
           <Label>Examen</Label>
           <Select value={selectedExamId} onValueChange={setSelectedExamId}>
             <SelectTrigger className="rounded-xl">
@@ -235,42 +296,46 @@ export default function GradesPage() {
           </Select>
         </div>
 
-        <Button
-          onClick={() => setStudentDialogOpen(true)}
-          disabled={!selectedCourseId}
-          className="h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
-        >
-          <Users className="mr-2 h-4 w-4" />
-          Agregar Alumno
-        </Button>
+        <div className="flex gap-2 sm:gap-3">
+          <Button
+            onClick={() => setStudentDialogOpen(true)}
+            disabled={!selectedCourseId}
+            className="flex-1 sm:flex-none h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
+          >
+            <Users className="mr-2 h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Agregar</span>
+            <span className="sm:hidden">Alumno</span>
+          </Button>
 
-        <Button
-          onClick={() => setRubricDialogOpen(true)}
-          disabled={!selectedExamId}
-          className="h-11 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          Pauta
-        </Button>
+          <Button
+            onClick={() => setRubricDialogOpen(true)}
+            disabled={!selectedExamId}
+            className="flex-1 sm:flex-none h-11 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
+          >
+            <FileText className="mr-2 h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Pauta</span>
+          </Button>
+        </div>
       </div>
 
       {/* Tabla de notas */}
       {selectedExam && (
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <CardTitle>{selectedExam?.title}</CardTitle>
+                <CardTitle className="text-xl lg:text-2xl">{selectedExam?.title}</CardTitle>
                 <CardDescription>
                   {students.length} {students.length === 1 ? 'alumno' : 'alumnos'} • {rubric ? 'Pauta configurada' : 'Sin pauta configurada'}
                 </CardDescription>
               </div>
               <Button
                 onClick={() => setGradeDialogOpen(true)}
-                className="rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
+                className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
               >
                 <Camera className="mr-2 h-4 w-4" />
-                Corregir con IA
+                <span className="hidden sm:inline">Corregir con IA</span>
+                <span className="sm:hidden">Corregir</span>
               </Button>
             </div>
           </CardHeader>
@@ -287,63 +352,65 @@ export default function GradesPage() {
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Alumno</TableHead>
-                    <TableHead>Puntaje</TableHead>
-                    <TableHead>Nota</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => {
-                    const grade = grades.find((g) => g.studentId === student.id)
-                    return (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell>
-                          {grade ? `${grade.score} pts` : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {grade?.grade ? grade.grade.toFixed(1) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {grade?.status === 'auto_graded' && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              IA
-                            </span>
-                          )}
-                          {grade?.status === 'graded' && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              Manual
-                            </span>
-                          )}
-                          {!grade?.status && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-                              Pendiente
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedGrade({ student, grade })
-                              setGradeDialogOpen(true)
-                            }}
-                            className="rounded-lg"
-                          >
-                            {grade ? <Eye className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto -mx-4 lg:mx-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Alumno</TableHead>
+                      <TableHead>Puntaje</TableHead>
+                      <TableHead>Nota</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student) => {
+                      const grade = grades.find((g) => g.studentId === student.id)
+                      return (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{student.name}</TableCell>
+                          <TableCell>
+                            {grade ? `${grade.score} pts` : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {grade?.grade ? grade.grade.toFixed(1) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {grade?.status === 'auto_graded' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                IA
+                              </span>
+                            )}
+                            {grade?.status === 'graded' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Manual
+                              </span>
+                            )}
+                            {!grade?.status && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                                Pendiente
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedGrade({ student, grade })
+                                setGradeDialogOpen(true)
+                              }}
+                              className="rounded-lg"
+                            >
+                              {grade ? <Eye className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -351,7 +418,7 @@ export default function GradesPage() {
 
       {/* Dialog: Agregar Alumno */}
       <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[95vw]">
           <DialogHeader>
             <DialogTitle>Agregar Alumno</DialogTitle>
             <DialogDescription>
@@ -402,7 +469,7 @@ export default function GradesPage() {
 
       {/* Dialog: Configurar Pauta */}
       <Dialog open={rubricDialogOpen} onOpenChange={setRubricDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurar Pauta de Corrección</DialogTitle>
             <DialogDescription>
@@ -474,11 +541,11 @@ export default function GradesPage() {
 
       {/* Dialog: Corregir con IA */}
       <Dialog open={gradeDialogOpen} onOpenChange={setGradeDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Corrección Automática con IA</DialogTitle>
             <DialogDescription>
-              Sube una imagen del examen para corregir automáticamente
+              Sube o toma una foto del examen para corregir automáticamente
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -496,23 +563,77 @@ export default function GradesPage() {
                 </p>
               </div>
             )}
+
+            {/* Upload de imagen */}
             <div>
-              <Label htmlFor="imageUrl">URL de la imagen del examen *</Label>
-              <Input
-                id="imageUrl"
-                value={gradingForm.imageUrl}
-                onChange={(e) => setGradingForm({ ...gradingForm, imageUrl: e.target.value })}
-                placeholder="https://..."
-                className="rounded-xl"
+              <Label>Imagen del examen *</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="exam-image-input"
               />
+
+              {gradingForm.imageUrl ? (
+                <div className="relative mt-2">
+                  <img
+                    src={gradingForm.imageUrl}
+                    alt="Examen"
+                    className="w-full h-auto rounded-xl border border-slate-200 dark:border-slate-800"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={clearImage}
+                    className="absolute top-2 right-2 rounded-full shadow-lg"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
+                  >
+                    <Upload className="h-6 w-6" />
+                    <span className="text-sm">Subir archivo</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCameraCapture}
+                    className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
+                  >
+                    <Camera className="h-6 w-6" />
+                    <span className="text-sm">Tomar foto</span>
+                  </Button>
+                </div>
+              )}
+
+              {gradingForm.imageFile && !gradingForm.imageUrl && (
+                <div className="mt-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800 dark:text-blue-200">
+                    {gradingForm.imageFile.name}
+                  </span>
+                </div>
+              )}
             </div>
+
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setGradeDialogOpen(false)} className="rounded-xl">
+              <Button type="button" variant="outline" onClick={() => { setGradeDialogOpen(false); clearImage() }} className="rounded-xl">
                 Cancelar
               </Button>
               <Button
                 onClick={handleAutoGrade}
-                disabled={loading || !rubric || !gradingForm.imageUrl}
+                disabled={loading || !rubric || (!gradingForm.imageUrl && !gradingForm.imageFile)}
                 className="rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white"
               >
                 {loading ? 'Procesando...' : 'Corregir con IA'}

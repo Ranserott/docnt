@@ -25,9 +25,9 @@ export default async function DashboardLayout({
       <Sidebar />
 
       {/* Contenido principal */}
-      <div className="ml-72 flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors">
+      <div className="lg:ml-72 flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors">
         <Header />
-        <main className="flex-1 p-6 pt-20">
+        <main className="flex-1 p-4 pt-20 lg:p-6 lg:pt-20">
           {children}
         </main>
       </div>
