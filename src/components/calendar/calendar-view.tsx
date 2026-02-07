@@ -46,6 +46,11 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
     }
   }
 
+  // Recargar eventos cuando cambia el mes
+  useEffect(() => {
+    reloadEvents()
+  }, [currentDate])
+
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
@@ -170,6 +175,14 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
             >
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Evento
+            </Button>
+            <Button
+              onClick={reloadEvents}
+              variant="outline"
+              className="h-10 w-10 rounded-xl p-0"
+              title="Recargar eventos"
+            >
+              🔄
             </Button>
           </div>
         </div>
