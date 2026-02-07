@@ -863,7 +863,7 @@ export default function GradesPage() {
                   {Object.entries(rubric.rubric).slice(0, 10).map(([num, ans]) => (
                     <span key={num} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-slate-800 text-xs font-medium">
                       <span className="text-slate-500">P{num}</span>
-                      <span className="text-green-600 dark:text-green-400 font-bold">= {ans}</span>
+                      <span className="text-green-600 dark:text-green-400 font-bold">= {String(ans)}</span>
                     </span>
                   ))}
                   {Object.keys(rubric.rubric).length > 10 && (
