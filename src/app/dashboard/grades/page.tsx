@@ -69,25 +69,14 @@ export default function GradesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const rubricFileInputRef = useRef<HTMLInputElement>(null)
 
-  // Subir imagen y obtener URL
-  const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    const uploadEndpoint = isDevelopment ? '/api/upload-local' : '/api/upload'
-
-    const response = await fetch(uploadEndpoint, {
-      method: 'POST',
-      body: formData,
+  // Convertir archivo a base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
     })
-
-    if (!response.ok) {
-      throw new Error('Error al subir la imagen')
-    }
-
-    const data = await response.json()
-    return data.url
   }
 
   // Agregar pregunta a la pauta
@@ -133,7 +122,7 @@ export default function GradesPage() {
 
     try {
       setLoading(true)
-      const url = await uploadImage(file)
+      const url = await fileToBase64(file)
       setGradingForm({ ...gradingForm, imageUrl: url, imageFile: file })
     } catch (error) {
       alert('Error al subir la imagen')
@@ -150,7 +139,7 @@ export default function GradesPage() {
 
     try {
       setLoading(true)
-      const url = await uploadImage(file)
+      const url = await fileToBase64(file)
       setRubricForm({ ...rubricForm, imageUrl: url, imageFile: file })
     } catch (error) {
       alert('Error al subir la imagen')
@@ -267,7 +256,7 @@ export default function GradesPage() {
       // Si hay un archivo sin subir, subirlo primero
       let imageUrl = rubricForm.imageUrl
       if (rubricForm.imageFile && !imageUrl) {
-        imageUrl = await uploadImage(rubricForm.imageFile)
+        imageUrl = await fileToBase64(rubricForm.imageFile)
         setRubricForm({ ...rubricForm, imageUrl })
       }
 
@@ -313,7 +302,7 @@ export default function GradesPage() {
       // Si hay un archivo sin subir, subirlo primero
       let imageUrl = gradingForm.imageUrl
       if (gradingForm.imageFile && !imageUrl) {
-        imageUrl = await uploadImage(gradingForm.imageFile)
+        imageUrl = await fileToBase64(gradingForm.imageFile)
         setGradingForm({ ...gradingForm, imageUrl })
       }
 

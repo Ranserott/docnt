@@ -38,25 +38,14 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
   const [imageFile, setImageFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Subir archivo y obtener URL
-  const uploadFile = async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const isDevelopment = process.env.NODE_ENV === 'development'
-    const uploadEndpoint = isDevelopment ? '/api/upload-local' : '/api/upload'
-
-    const response = await fetch(uploadEndpoint, {
-      method: 'POST',
-      body: formData,
+  // Convertir archivo a base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
     })
-
-    if (!response.ok) {
-      throw new Error('Error al subir el archivo')
-    }
-
-    const data = await response.json()
-    return data.url
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,10 +57,10 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
 
     try {
       setLoading(true)
-      const url = await uploadFile(file)
+      const url = await fileToBase64(file)
       setFileUrl(url)
     } catch (error) {
-      alert('Error al subir el archivo')
+      alert('Error al procesar el archivo')
     } finally {
       setLoading(false)
     }
