@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, CheckSquare, Camera, Save, Users, FileText, Upload, Eye, Image as ImageIcon, X } from 'lucide-react'
+import { Plus, CheckSquare, Camera, Save, Users, FileText, Upload, Eye, Image as ImageIcon, X, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getCourses } from '@/lib/actions/course.actions'
 import { getExams } from '@/lib/actions/exam.actions'
@@ -19,6 +19,13 @@ import { getGrades, getGradingRubric, upsertGrade, upsertGradingRubric } from '@
 import { getStudents, createStudent } from '@/lib/actions/student.actions'
 
 type Status = 'pending' | 'graded' | 'auto_graded'
+
+// Tipo para una pregunta en la pauta
+type RubricQuestion = {
+  number: string      // Número de pregunta: "1", "2", "3"
+  correctAnswer: string // Respuesta correcta: "A", "B", "C", "D"
+  points: number      // Puntaje: 1, 2, 3, etc.
+}
 
 export default function GradesPage() {
   const [courses, setCourses] = useState<any[]>([])
@@ -38,18 +45,35 @@ export default function GradesPage() {
 
   // Formularios
   const [studentForm, setStudentForm] = useState({ name: '', email: '', studentCode: '' })
-  const [rubricForm, setRubricForm] = useState({ name: '', rubric: '{}', points: '{}', imageUrl: '', imageFile: null as File | null })
-  const [gradingForm, setGradingForm] = useState({ imageUrl: '', rubric: '{}', points: '{}', imageFile: null as File | null })
+
+  // Pauta visual - lista de preguntas
+  const [rubricForm, setRubricForm] = useState({
+    name: '',
+    questions: [] as RubricQuestion[],
+    imageUrl: '',
+    imageFile: null as File | null
+  })
+
+  // Pregunta temporal que se está agregando
+  const [tempQuestion, setTempQuestion] = useState<RubricQuestion>({
+    number: '1',
+    correctAnswer: 'A',
+    points: 1
+  })
+
+  const [gradingForm, setGradingForm] = useState({
+    imageUrl: '',
+    imageFile: null as File | null
+  })
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const rubricFileInputRef = useRef<HTMLInputElement>(null)
 
   // Subir imagen y obtener URL
-  // Usa almacenamiento local en desarrollo, Vercel Blob en producción
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
 
-    // En desarrollo usa upload-local, en producción usa Vercel Blob
     const isDevelopment = process.env.NODE_ENV === 'development'
     const uploadEndpoint = isDevelopment ? '/api/upload-local' : '/api/upload'
 
@@ -64,6 +88,41 @@ export default function GradesPage() {
 
     const data = await response.json()
     return data.url
+  }
+
+  // Agregar pregunta a la pauta
+  const addQuestion = () => {
+    if (!tempQuestion.number || !tempQuestion.correctAnswer) {
+      alert('Por favor completa el número de pregunta y la respuesta correcta')
+      return
+    }
+
+    // Verificar que el número no exista
+    if (rubricForm.questions.some(q => q.number === tempQuestion.number)) {
+      alert('Ya existe una pregunta con ese número')
+      return
+    }
+
+    setRubricForm({
+      ...rubricForm,
+      questions: [...rubricForm.questions, { ...tempQuestion }]
+    })
+
+    // Preparar siguiente pregunta
+    const nextNum = parseInt(tempQuestion.number) + 1
+    setTempQuestion({
+      number: String(nextNum),
+      correctAnswer: 'A',
+      points: tempQuestion.points
+    })
+  }
+
+  // Eliminar pregunta de la pauta
+  const removeQuestion = (questionNumber: string) => {
+    setRubricForm({
+      ...rubricForm,
+      questions: rubricForm.questions.filter(q => q.number !== questionNumber)
+    })
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,6 +259,11 @@ export default function GradesPage() {
   const handleSaveRubric = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      if (rubricForm.questions.length === 0) {
+        alert('Por favor agrega al menos una pregunta a la pauta')
+        return
+      }
+
       // Si hay un archivo sin subir, subirlo primero
       let imageUrl = rubricForm.imageUrl
       if (rubricForm.imageFile && !imageUrl) {
@@ -207,8 +271,14 @@ export default function GradesPage() {
         setRubricForm({ ...rubricForm, imageUrl })
       }
 
-      const rubricData = JSON.parse(rubricForm.rubric)
-      const pointsData = rubricForm.points ? JSON.parse(rubricForm.points) : undefined
+      // Convertir la lista visual a los objetos JSON que espera la API
+      const rubricData: Record<string, string> = {}
+      const pointsData: Record<string, number> = {}
+
+      rubricForm.questions.forEach(q => {
+        rubricData[q.number] = q.correctAnswer
+        pointsData[q.number] = q.points
+      })
 
       await upsertGradingRubric({
         examId: selectedExamId,
@@ -219,9 +289,21 @@ export default function GradesPage() {
       })
 
       setRubricDialogOpen(false)
+      // Resetear formulario
+      setRubricForm({
+        name: '',
+        questions: [],
+        imageUrl: '',
+        imageFile: null
+      })
+      setTempQuestion({
+        number: '1',
+        correctAnswer: 'A',
+        points: 1
+      })
       loadRubric()
     } catch (error) {
-      alert('Error en el formato JSON. Debe ser: {"1": "A", "2": "B"}')
+      alert('Error al guardar la pauta')
     }
   }
 
@@ -511,16 +593,31 @@ export default function GradesPage() {
       {/* Dialog: Configurar Pauta */}
       <Dialog open={rubricDialogOpen} onOpenChange={(open) => {
         setRubricDialogOpen(open)
-        if (!open) clearRubricImage()
+        if (!open) {
+          clearRubricImage()
+          // Resetear formulario al cerrar
+          setRubricForm({
+            name: '',
+            questions: [],
+            imageUrl: '',
+            imageFile: null
+          })
+          setTempQuestion({
+            number: '1',
+            correctAnswer: 'A',
+            points: 1
+          })
+        }
       }}>
-        <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurar Pauta de Corrección</DialogTitle>
             <DialogDescription>
-              Define las respuestas correctas para cada pregunta
+              Agrega las preguntas y sus respuestas correctas
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSaveRubric} className="space-y-4">
+          <form onSubmit={handleSaveRubric} className="space-y-6">
+            {/* Nombre de la pauta */}
             <div>
               <Label htmlFor="name">Nombre de la pauta *</Label>
               <Input
@@ -532,39 +629,129 @@ export default function GradesPage() {
                 className="rounded-xl"
               />
             </div>
-            <div>
-              <Label htmlFor="rubric">Respuestas correctas (JSON) *</Label>
-              <p className="text-xs text-slate-500 mb-2">
-                Formato: {`{"1": "A", "2": "B", "3": "C"}`}
-              </p>
-              <textarea
-                id="rubric"
-                value={rubricForm.rubric}
-                onChange={(e) => setRubricForm({ ...rubricForm, rubric: e.target.value })}
-                placeholder='{"1": "A", "2": "B", "3": "C"}'
-                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono"
-                rows={3}
-                required
-              />
+
+            {/* Agregar pregunta */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 space-y-4">
+              <h3 className="font-semibold text-sm">Agregar Nueva Pregunta</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Número de pregunta */}
+                <div>
+                  <Label htmlFor="q-number">N° Pregunta *</Label>
+                  <Input
+                    id="q-number"
+                    type="number"
+                    min="1"
+                    value={tempQuestion.number}
+                    onChange={(e) => setTempQuestion({ ...tempQuestion, number: e.target.value })}
+                    placeholder="1"
+                    className="rounded-xl"
+                    required
+                  />
+                </div>
+
+                {/* Respuesta correcta */}
+                <div>
+                  <Label htmlFor="q-answer">Correcta *</Label>
+                  <Select
+                    value={tempQuestion.correctAnswer}
+                    onValueChange={(value) => setTempQuestion({ ...tempQuestion, correctAnswer: value })}
+                  >
+                    <SelectTrigger className="rounded-xl" id="q-answer">
+                      <SelectValue placeholder="Seleccione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                      <SelectItem value="E">E</SelectItem>
+                      <SelectItem value="F">F</SelectItem>
+                      <SelectItem value="V">Verdadero</SelectItem>
+                      <SelectItem value="F">Falso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Puntaje */}
+                <div>
+                  <Label htmlFor="q-points">Puntos *</Label>
+                  <Input
+                    id="q-points"
+                    type="number"
+                    min="1"
+                    value={tempQuestion.points}
+                    onChange={(e) => setTempQuestion({ ...tempQuestion, points: parseInt(e.target.value) || 1 })}
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={addQuestion}
+                className="w-full rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Pregunta
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="points">Puntaje por pregunta (JSON, opcional)</Label>
-              <p className="text-xs text-slate-500 mb-2">
-                Formato: {`{"1": 2, "2": 2, "3": 1}`}
-              </p>
-              <textarea
-                id="points"
-                value={rubricForm.points}
-                onChange={(e) => setRubricForm({ ...rubricForm, points: e.target.value })}
-                placeholder='{"1": 2, "2": 2, "3": 1}'
-                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono"
-                rows={2}
-              />
-            </div>
+
+            {/* Lista de preguntas agregadas */}
+            {rubricForm.questions.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-sm mb-3">
+                  Preguntas Agregadas ({rubricForm.questions.length})
+                </h3>
+                <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-20">N°</TableHead>
+                        <TableHead>Respuesta Correcta</TableHead>
+                        <TableHead className="w-20 text-center">Puntos</TableHead>
+                        <TableHead className="w-20 text-right">Acción</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rubricForm.questions
+                        .sort((a, b) => parseInt(a.number) - parseInt(b.number))
+                        .map((q) => (
+                          <TableRow key={q.number}>
+                            <TableCell className="font-medium">{q.number}</TableCell>
+                            <TableCell>
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-bold">
+                                {q.correctAnswer}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">{q.points} pt{q.points > 1 ? 's' : ''}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeQuestion(q.number)}
+                                className="h-8 w-8 p-0 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Total: {rubricForm.questions.reduce((sum, q) => sum + q.points, 0)} puntos
+                </p>
+              </div>
+            )}
 
             {/* Upload de imagen de la pauta */}
             <div>
               <Label>Imagen de la pauta (opcional)</Label>
+              <p className="text-xs text-slate-500 mb-2">
+                Puedes subir una foto de la pauta oficial como referencia
+              </p>
               <input
                 ref={rubricFileInputRef}
                 type="file"
@@ -624,11 +811,21 @@ export default function GradesPage() {
                 </div>
               )}
             </div>
+
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setRubricDialogOpen(false)} className="rounded-xl">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRubricDialogOpen(false)}
+                className="rounded-xl"
+              >
                 Cancelar
               </Button>
-              <Button type="submit" className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+              <Button
+                type="submit"
+                disabled={rubricForm.questions.length === 0}
+                className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+              >
                 Guardar Pauta
               </Button>
             </DialogFooter>
@@ -637,7 +834,10 @@ export default function GradesPage() {
       </Dialog>
 
       {/* Dialog: Corregir con IA */}
-      <Dialog open={gradeDialogOpen} onOpenChange={setGradeDialogOpen}>
+      <Dialog open={gradeDialogOpen} onOpenChange={(open) => {
+        setGradeDialogOpen(open)
+        if (!open) clearImage()
+      }}>
         <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Corrección Automática con IA</DialogTitle>
@@ -647,16 +847,27 @@ export default function GradesPage() {
           </DialogHeader>
           <div className="space-y-4">
             {rubric ? (
-              <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800">
-                <p className="text-sm font-medium mb-2">Pauta actual:</p>
-                <pre className="text-xs overflow-auto p-2 rounded bg-white dark:bg-slate-900">
-                  {JSON.stringify(rubric.rubric, null, 2)}
-                </pre>
+              <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                <p className="text-sm font-semibold mb-2 text-green-800 dark:text-green-200">✓ Pauta Configurada</p>
+                <p className="text-xs text-green-700 dark:text-green-300">
+                  {rubric.name} • {Object.keys(rubric.rubric).length} preguntas
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {Object.entries(rubric.rubric).slice(0, 10).map(([num, ans]) => (
+                    <span key={num} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-slate-800 text-xs font-medium">
+                      <span className="text-slate-500">P{num}</span>
+                      <span className="text-green-600 dark:text-green-400 font-bold">= {ans}</span>
+                    </span>
+                  ))}
+                  {Object.keys(rubric.rubric).length > 10 && (
+                    <span className="text-xs text-slate-500">+{Object.keys(rubric.rubric).length - 10} más...</span>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20">
+              <div className="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  ⚠️ No hay pauta configurada. Debes configurar la pauta primero.
+                  ⚠️ No hay pauta configurada. Debes configurar la pauta primero con el botón "Pauta".
                 </p>
               </div>
             )}
