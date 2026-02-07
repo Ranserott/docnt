@@ -323,8 +323,15 @@ export default function GradesPage() {
         return
       }
 
-      const rubricData = rubric ? rubric.rubric : JSON.parse(gradingForm.rubric)
-      const pointsData = rubric ? rubric.points : JSON.parse(gradingForm.points)
+      // Verificar que haya una pauta configurada
+      if (!rubric) {
+        alert('Primero debes configurar la pauta de corrección para este examen')
+        setLoading(false)
+        return
+      }
+
+      const rubricData = rubric.rubric
+      const pointsData = rubric.points || {}
 
       const response = await fetch('/api/ai/grade', {
         method: 'POST',
