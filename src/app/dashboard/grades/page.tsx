@@ -66,6 +66,15 @@ export default function GradesPage() {
     imageFile: null as File | null
   })
 
+  // Modo de ingreso de notas: 'auto' (IA) o 'manual'
+  const [gradeMode, setGradeMode] = useState<'auto' | 'manual'>('auto')
+
+  // Formulario de ingreso manual
+  const [manualGradeForm, setManualGradeForm] = useState({
+    score: '',
+    grade: '',
+  })
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const rubricFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -357,6 +366,43 @@ export default function GradesPage() {
       }
     } catch (error) {
       alert('Error al procesar la corrección')
+    }
+    setLoading(false)
+  }
+
+  const handleManualGrade = async () => {
+    // Validar campos
+    const score = parseFloat(manualGradeForm.score)
+    const grade = parseFloat(manualGradeForm.grade)
+
+    if (isNaN(score) || score < 0) {
+      alert('Por favor ingresa un puntaje válido')
+      return
+    }
+
+    if (isNaN(grade) || grade < 1.0 || grade > 7.0) {
+      alert('Por favor ingresa una nota válida (1.0 - 7.0)')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const student = students[0]
+      if (student) {
+        await upsertGrade({
+          examId: selectedExamId,
+          studentId: student.id,
+          score: score,
+          grade: grade,
+          status: 'manual',
+        })
+        loadGrades()
+        setGradeDialogOpen(false)
+        setManualGradeForm({ score: '', grade: '' })
+        alert(`Nota guardada: ${grade}`)
+      }
+    } catch (error) {
+      alert('Error al guardar la nota')
     }
     setLoading(false)
   }
@@ -836,112 +882,205 @@ export default function GradesPage() {
       }}>
         <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Corrección Automática con IA</DialogTitle>
+            <DialogTitle>Ingresar Notas</DialogTitle>
             <DialogDescription>
-              Sube o toma una foto del examen para corregir automáticamente
+              Corrige automáticamente con IA o ingresa las notas manualmente
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {rubric ? (
-              <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                <p className="text-sm font-semibold mb-2 text-green-800 dark:text-green-200">✓ Pauta Configurada</p>
-                <p className="text-xs text-green-700 dark:text-green-300">
-                  {rubric.name} • {Object.keys(rubric.rubric).length} preguntas
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {Object.entries(rubric.rubric).slice(0, 10).map(([num, ans]) => (
-                    <span key={num} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-slate-800 text-xs font-medium">
-                      <span className="text-slate-500">P{num}</span>
-                      <span className="text-green-600 dark:text-green-400 font-bold">= {String(ans)}</span>
-                    </span>
-                  ))}
-                  {Object.keys(rubric.rubric).length > 10 && (
-                    <span className="text-xs text-slate-500">+{Object.keys(rubric.rubric).length - 10} más...</span>
+            {/* Selector de modo */}
+            <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              <button
+                onClick={() => setGradeMode('auto')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                  gradeMode === 'auto'
+                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                🤖 Corregir con IA
+              </button>
+              <button
+                onClick={() => setGradeMode('manual')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                  gradeMode === 'manual'
+                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                ✏️ Ingreso Manual
+              </button>
+            </div>
+
+            {/* Modo IA */}
+            {gradeMode === 'auto' && (
+              <>
+                {rubric ? (
+                  <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                    <p className="text-sm font-semibold mb-2 text-green-800 dark:text-green-200">✓ Pauta Configurada</p>
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      {rubric.name} • {Object.keys(rubric.rubric).length} preguntas
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {Object.entries(rubric.rubric).slice(0, 10).map(([num, ans]) => (
+                        <span key={num} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-slate-800 text-xs font-medium">
+                          <span className="text-slate-500">P{num}</span>
+                          <span className="text-green-600 dark:text-green-400 font-bold">= {String(ans)}</span>
+                        </span>
+                      ))}
+                      {Object.keys(rubric.rubric).length > 10 && (
+                        <span className="text-xs text-slate-500">+{Object.keys(rubric.rubric).length - 10} más...</span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ No hay pauta configurada. Debes configurar la pauta primero con el botón "Pauta".
+                    </p>
+                  </div>
+                )}
+
+                {/* Upload de imagen */}
+                <div>
+                  <Label>Imagen del examen *</Label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="exam-image-input"
+                  />
+
+                  {gradingForm.imageUrl ? (
+                    <div className="relative mt-2">
+                      <img
+                        src={gradingForm.imageUrl}
+                        alt="Examen"
+                        className="w-full h-auto rounded-xl border border-slate-200 dark:border-slate-800"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        onClick={clearImage}
+                        className="absolute top-2 right-2 rounded-full shadow-lg"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
+                      >
+                        <Upload className="h-6 w-6" />
+                        <span className="text-sm">Subir archivo</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCameraCapture}
+                        className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
+                      >
+                        <Camera className="h-6 w-6" />
+                        <span className="text-sm">Tomar foto</span>
+                      </Button>
+                    </div>
+                  )}
+
+                  {gradingForm.imageFile && !gradingForm.imageUrl && (
+                    <div className="mt-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm text-blue-800 dark:text-blue-200">
+                        {gradingForm.imageFile.name}
+                      </span>
+                    </div>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  ⚠️ No hay pauta configurada. Debes configurar la pauta primero con el botón "Pauta".
-                </p>
+              </>
+            )}
+
+            {/* Modo Manual */}
+            {gradeMode === 'manual' && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    📝 Ingresa el puntaje obtenido y la nota final (escala 1.0 - 7.0)
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="manual-score">Puntaje Obtenido</Label>
+                    <Input
+                      id="manual-score"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={manualGradeForm.score}
+                      onChange={(e) => setManualGradeForm({ ...manualGradeForm, score: e.target.value })}
+                      placeholder="Ej: 45"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="manual-grade">Nota Final (1.0 - 7.0)</Label>
+                    <Input
+                      id="manual-grade"
+                      type="number"
+                      step="0.1"
+                      min="1.0"
+                      max="7.0"
+                      value={manualGradeForm.grade}
+                      onChange={(e) => setManualGradeForm({ ...manualGradeForm, grade: e.target.value })}
+                      placeholder="Ej: 5.5"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  {/* Escala de referencia rápida */}
+                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Escala de referencia:</p>
+                    <div className="flex flex-wrap gap-1 text-xs">
+                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">7.0 = Excelente</span>
+                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">6.0-6.9 = Muy Bueno</span>
+                      <span className="px-2 py-1 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded">5.0-5.9 = Bueno</span>
+                      <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded">4.0-4.9 = Aprobado</span>
+                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">&lt;4.0 = Reprobado</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Upload de imagen */}
-            <div>
-              <Label>Imagen del examen *</Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="exam-image-input"
-              />
-
-              {gradingForm.imageUrl ? (
-                <div className="relative mt-2">
-                  <img
-                    src={gradingForm.imageUrl}
-                    alt="Examen"
-                    className="w-full h-auto rounded-xl border border-slate-200 dark:border-slate-800"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={clearImage}
-                    className="absolute top-2 right-2 rounded-full shadow-lg"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
-                  >
-                    <Upload className="h-6 w-6" />
-                    <span className="text-sm">Subir archivo</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCameraCapture}
-                    className="h-24 rounded-xl flex flex-col gap-2 border-dashed"
-                  >
-                    <Camera className="h-6 w-6" />
-                    <span className="text-sm">Tomar foto</span>
-                  </Button>
-                </div>
-              )}
-
-              {gradingForm.imageFile && !gradingForm.imageUrl && (
-                <div className="mt-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm text-blue-800 dark:text-blue-200">
-                    {gradingForm.imageFile.name}
-                  </span>
-                </div>
-              )}
-            </div>
-
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setGradeDialogOpen(false); clearImage() }} className="rounded-xl">
+              <Button type="button" variant="outline" onClick={() => { setGradeDialogOpen(false); clearImage(); setManualGradeForm({ score: '', grade: '' }) }} className="rounded-xl">
                 Cancelar
               </Button>
-              <Button
-                onClick={handleAutoGrade}
-                disabled={loading || !rubric || (!gradingForm.imageUrl && !gradingForm.imageFile)}
-                className="rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white"
-              >
-                {loading ? 'Procesando...' : 'Corregir con IA'}
-              </Button>
+              {gradeMode === 'auto' ? (
+                <Button
+                  onClick={handleAutoGrade}
+                  disabled={loading || !rubric || (!gradingForm.imageUrl && !gradingForm.imageFile)}
+                  className="rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+                >
+                  {loading ? 'Procesando...' : 'Corregir con IA'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleManualGrade}
+                  disabled={loading || !manualGradeForm.score || !manualGradeForm.grade}
+                  className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                >
+                  {loading ? 'Guardando...' : 'Guardar Nota'}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         </DialogContent>

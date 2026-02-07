@@ -2,12 +2,55 @@
  * Página principal del Dashboard
  */
 
+'use client'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BookOpen, Calendar, GraduationCap, TrendingUp } from 'lucide-react'
+import { BookOpen, Calendar, GraduationCap, TrendingUp, Users, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { getCourses } from '@/lib/actions/course.actions'
+import { getExams } from '@/lib/actions/exam.actions'
+import { getEvents } from '@/lib/actions/calendar.actions'
 
 export default function DashboardPage() {
+  const [courses, setCourses] = useState<any[]>([])
+  const [exams, setExams] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadData = async () => {
+      const [coursesResult, examsResult, eventsResult] = await Promise.all([
+        getCourses(),
+        getExams(),
+        getEvents(),
+      ])
+      if (coursesResult.data) setCourses(coursesResult.data)
+      if (examsResult.data) setExams(examsResult.data)
+      if (eventsResult.data) setEvents(eventsResult.data)
+      setLoading(false)
+    }
+    loadData()
+  }, [])
+
+  // Calcular eventos de esta semana
+  const now = new Date()
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - now.getDay())
+  weekStart.setHours(0, 0, 0, 0)
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekStart.getDate() + 6)
+  weekEnd.setHours(23, 59, 59, 999)
+
+  const thisWeekEvents = events.filter(e => {
+    const eventDate = new Date(e.startDate)
+    return eventDate >= weekStart && eventDate <= weekEnd
+  })
+
+  // Calcular total de secciones
+  const totalSections = courses.reduce((sum, course) => sum + (course._count?.sections || 0), 0)
+
   return (
     <div className="space-y-8">
       {/* Encabezado */}
@@ -34,7 +77,9 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-blue-900 dark:text-blue-100">0</div>
+            <div className="text-4xl font-bold text-blue-900 dark:text-blue-100">
+              {loading ? '...' : courses.length}
+            </div>
             <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
               Cursos en este período
             </p>
@@ -51,7 +96,9 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-green-900 dark:text-green-100">0</div>
+            <div className="text-4xl font-bold text-green-900 dark:text-green-100">
+              {loading ? '...' : totalSections}
+            </div>
             <p className="mt-1 text-sm text-green-700 dark:text-green-300">
               Secciones activas
             </p>
@@ -68,7 +115,9 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-purple-900 dark:text-purple-100">0</div>
+            <div className="text-4xl font-bold text-purple-900 dark:text-purple-100">
+              {loading ? '...' : exams.length}
+            </div>
             <p className="mt-1 text-sm text-purple-700 dark:text-purple-300">
               Evaluaciones creadas
             </p>
@@ -85,13 +134,45 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-orange-900 dark:text-orange-100">0</div>
+            <div className="text-4xl font-bold text-orange-900 dark:text-orange-100">
+              {loading ? '...' : thisWeekEvents.length}
+            </div>
             <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">
               Esta semana
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Escala de Notas de Referencia */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Escala de Notas de Referencia (Chile)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {[
+              { note: '7.0', label: 'Excelente', color: 'bg-green-500', percent: '95-100%' },
+              { note: '6.0-6.9', label: 'Muy Bueno', color: 'bg-blue-500', percent: '85-94%' },
+              { note: '5.0-5.9', label: 'Bueno', color: 'bg-cyan-500', percent: '75-84%' },
+              { note: '4.0-4.9', label: 'Suficiente', color: 'bg-yellow-500', percent: '60-74%' },
+              { note: '3.0-3.9', label: 'Insuficiente', color: 'bg-orange-500', percent: '40-59%' },
+              { note: '2.0-2.9', label: 'Deficiente', color: 'bg-red-500', percent: '20-39%' },
+              { note: '1.0-1.9', label: 'Muy Deficiente', color: 'bg-red-700', percent: '0-19%' },
+            ].map((scale) => (
+              <div key={scale.note} className="text-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <div className={`w-full h-2 rounded-full ${scale.color} mb-2`}></div>
+                <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{scale.note}</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">{scale.label}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">{scale.percent}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Acciones rápidas */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
