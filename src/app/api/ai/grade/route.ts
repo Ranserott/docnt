@@ -4,7 +4,37 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
+
+// Obtener imagen como base64 desde URL local
+async function getImageAsBase64(imageUrl: string): Promise<string> {
+  // Si es base64 directo, retornarlo
+  if (imageUrl.startsWith('data:image')) {
+    return imageUrl
+  }
+
+  // Si es URL relativa (/uploads/xxx.jpg), obtener el archivo
+  if (imageUrl.startsWith('/uploads/')) {
+    const fs = await import('fs/promises')
+    const path = await import('path')
+    const filename = imageUrl.split('/').pop()
+    const filePath = path.join(process.cwd(), 'public', 'uploads', filename || '')
+
+    try {
+      const imageBuffer = await fs.readFile(filePath)
+      const mimeType = filename?.endsWith('.png') ? 'image/png' :
+                       filename?.endsWith('.jpg') || filename?.endsWith('.jpeg') ? 'image/jpeg' :
+                       filename?.endsWith('.webp') ? 'image/webp' : 'image/jpeg'
+      return `data:${mimeType};base64,${imageBuffer.toString('base64')}`
+    } catch (error) {
+      console.error('Error reading image file:', error)
+      throw new Error('No se pudo leer la imagen')
+    }
+  }
+
+  // Si es URL externa, retornar tal cual
+  return imageUrl
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +47,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Convertir imagen a base64 si es local
+    const imageBase64 = await getImageAsBase64(imageUrl)
 
     // Llamar a la API de Novita para corrección con visión
     const response = await fetch('https://api.novita.ai/openai/v1/chat/completions', {
@@ -56,7 +89,7 @@ IMPORTANTE:
               {
                 type: 'image_url',
                 image_url: {
-                  url: imageUrl,
+                  url: imageBase64,
                 },
               },
             ],

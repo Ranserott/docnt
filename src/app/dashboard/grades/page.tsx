@@ -667,7 +667,7 @@ export default function GradesPage() {
                       <SelectItem value="E">E</SelectItem>
                       <SelectItem value="F">F</SelectItem>
                       <SelectItem value="V">Verdadero</SelectItem>
-                      <SelectItem value="F">Falso</SelectItem>
+                      <SelectItem value="FALSE">Falso</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

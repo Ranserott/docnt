@@ -108,7 +108,7 @@ export async function createExam(data: {
   courseId: string
   allowRandom?: boolean
   showResults?: boolean
-  fileId?: string
+  fileUrl?: string
 }) {
   const session = await auth()
 
@@ -136,6 +136,7 @@ export async function createExam(data: {
         duration: data.duration,
         allowRandom: data.allowRandom ?? false,
         showResults: data.showResults ?? false,
+        fileUrl: data.fileUrl,
         totalPoints: 0,
         userId: session.user.id,
         courseId: data.courseId,

@@ -4,7 +4,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createExam } from '@/lib/actions/exam.actions'
 import { useRouter } from 'next/navigation'
-import { Upload, Link as LinkIcon, X } from 'lucide-react'
+import { Upload, Link as LinkIcon, X, Camera, Image as ImageIcon } from 'lucide-react'
 
 interface ExamDialogProps {
   open: boolean
@@ -35,6 +35,56 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
   })
   const [fileUrl, setFileUrl] = useState('')
   const [fileName, setFileName] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Subir archivo y obtener URL
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const uploadEndpoint = isDevelopment ? '/api/upload-local' : '/api/upload'
+
+    const response = await fetch(uploadEndpoint, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('Error al subir el archivo')
+    }
+
+    const data = await response.json()
+    return data.url
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImageFile(file)
+    setFileName(file.name)
+
+    try {
+      setLoading(true)
+      const url = await uploadFile(file)
+      setFileUrl(url)
+    } catch (error) {
+      alert('Error al subir el archivo')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const clearFile = () => {
+    setFileUrl('')
+    setFileName('')
+    setImageFile(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,6 +99,7 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
         courseId: formData.courseId,
         allowRandom: formData.allowRandom,
         showResults: formData.showResults,
+        fileUrl: fileUrl || undefined,
       })
 
       onOpenChange(false)
@@ -159,46 +210,85 @@ export function ExamDialog({ open, onOpenChange, courses, onExamCreated }: ExamD
             />
           </div>
 
-          {/* Archivo del certamen (URL) */}
+          {/* Archivo del certamen (URL o Upload) */}
           {selectedCourse && (
             <div className="space-y-2">
               <Label>Archivo del certamen (opcional)</Label>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pega la URL de tu archivo (Google Drive, Dropbox, etc.)
+                Sube el PDF del certamen o pega una URL (Google Drive, Dropbox, etc.)
               </p>
-              {fileName ? (
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="exam-file-input"
+              />
+
+              {fileUrl ? (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
                   <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                   <span className="flex-1 text-sm truncate">{fileName}</span>
                   <button
                     type="button"
-                    onClick={() => {
-                      setFileUrl('')
-                      setFileName('')
-                    }}
+                    onClick={clearFile}
                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <Input
-                    type="url"
-                    value={fileUrl}
-                    onChange={(e) => setFileUrl(e.target.value)}
-                    placeholder="https://drive.google.com/..."
-                    className="rounded-xl flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setFileName(fileUrl.split('/').pop() || 'Archivo')}
-                    disabled={!fileUrl}
-                    className="rounded-xl"
-                  >
-                    <Upload className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      value={fileUrl}
+                      onChange={(e) => setFileUrl(e.target.value)}
+                      placeholder="https://drive.google.com/..."
+                      className="rounded-xl flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setFileName(fileUrl.split('/').pop() || 'Archivo')}
+                      disabled={!fileUrl}
+                      className="rounded-xl"
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-20 rounded-xl flex flex-col gap-1 border-dashed"
+                    >
+                      <Upload className="h-5 w-5" />
+                      <span className="text-xs">Subir PDF</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-20 rounded-xl flex flex-col gap-1 border-dashed"
+                    >
+                      <Camera className="h-5 w-5" />
+                      <span className="text-xs">Escanear</span>
+                    </Button>
+                  </div>
+
+                  {imageFile && !fileUrl && (
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm text-blue-800 dark:text-blue-200">
+                        {imageFile.name}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

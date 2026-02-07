@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, FileQuestion, GraduationCap, Calendar, Clock, Trash2, Edit, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, FileQuestion, GraduationCap, Calendar, Clock, Trash2, Edit, BookOpen, ChevronDown, ChevronUp, FileText, Download } from 'lucide-react'
 import { ExamDialog } from '@/components/exams/exam-dialog'
 import { getExams, deleteExam } from '@/lib/actions/exam.actions'
 import { getCourses } from '@/lib/actions/course.actions'
@@ -210,6 +210,20 @@ export default function ExamsPage() {
                               )}
                             </CardHeader>
                             <CardContent className="space-y-3">
+                              {/* PDF del certamen */}
+                              {exam.fileUrl && (
+                                <a
+                                  href={exam.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
+                                >
+                                  <FileText className="h-3 w-3" />
+                                  <span>Ver PDF</span>
+                                  <Download className="h-3 w-3" />
+                                </a>
+                              )}
+
                               {/* Detalles */}
                               <div className="flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-400">
                                 {exam.date && (

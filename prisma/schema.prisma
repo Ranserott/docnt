@@ -294,6 +294,9 @@ model Exam {
   allowRandom Boolean  @default(false) // Permitir orden aleatorio
   showResults Boolean  @default(false) // Mostrar resultados a alumnos
 
+  // Archivo del certamen (PDF)
+  fileUrl     String?  @db.Text  // URL del PDF del certamen
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
