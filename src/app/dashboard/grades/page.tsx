@@ -44,11 +44,16 @@ export default function GradesPage() {
   const rubricFileInputRef = useRef<HTMLInputElement>(null)
 
   // Subir imagen y obtener URL
+  // Usa almacenamiento local en desarrollo, Vercel Blob en producción
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await fetch('/api/upload', {
+    // En desarrollo usa upload-local, en producción usa Vercel Blob
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const uploadEndpoint = isDevelopment ? '/api/upload-local' : '/api/upload'
+
+    const response = await fetch(uploadEndpoint, {
       method: 'POST',
       body: formData,
     })
