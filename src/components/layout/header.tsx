@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ModeToggle } from '@/components/mode-toggle'
 
 export function Header() {
   return (
@@ -37,6 +38,9 @@ export function Header() {
 
       {/* Acciones */}
       <div className="flex items-center gap-2 lg:gap-3">
+        {/* Toggle de tema */}
+        <ModeToggle />
+
         {/* Notificaciones */}
         <Button
           variant="ghost"
