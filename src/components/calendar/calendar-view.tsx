@@ -102,7 +102,10 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
 
   const getEventsForDate = (date: Date) => {
     return events.filter((event) => {
-      const eventDate = new Date(event.startDate)
+      // Manejar fechas como strings ISO u objetos Date
+      const eventDate = event.startDate instanceof Date
+        ? event.startDate
+        : new Date(event.startDate)
       return isSameDay(eventDate, date)
     })
   }
@@ -292,8 +295,11 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
                   {format(new Date(viewingEvent.startDate), 'EEEE d MMMM, yyyy', { locale: es })}
-                  {!viewingEvent.allDay && (
-                    <> • {format(new Date(viewingEvent.startDate), 'HH:mm')}</>
+                  {!viewingEvent.allDay && viewingEvent.endDate && (
+                    <> • {format(new Date(viewingEvent.startDate), 'HH:mm', { locale: es })} - {format(new Date(viewingEvent.endDate), 'HH:mm', { locale: es })}</>
+                  )}
+                  {viewingEvent.allDay && (
+                    <> • Todo el día</>
                   )}
                 </p>
               </div>
