@@ -22,6 +22,7 @@ import {
   CheckSquare,
   Menu,
   X,
+  Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -41,6 +42,12 @@ const navItems = [
     href: '/dashboard/calendar',
     icon: Calendar,
     color: 'from-green-500 to-green-600',
+  },
+  {
+    title: 'Horario',
+    href: '/dashboard/schedule',
+    icon: Clock,
+    color: 'from-emerald-500 to-emerald-600',
   },
   {
     title: 'Cursos',

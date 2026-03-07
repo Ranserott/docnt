@@ -142,6 +142,11 @@ model Event {
   endDate     DateTime?
   allDay      Boolean   @default(false)
 
+  // Recurrencia (para horarios semanales)
+  isRecurring     Boolean   @default(false)  // ¿Es un evento recurrente?
+  recurrencePattern String?                 // Patrón: "weekly" (semanal), "biweekly" (quincenal)
+  recurrenceEnd    DateTime?                // Fecha fin de recurrencia
+
   // Contenido del evento
   notes       String?   @db.Text     // Notas de planificación (privadas)
   observations String?  @db.Text     // Observaciones post-clase
