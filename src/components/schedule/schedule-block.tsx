@@ -49,16 +49,29 @@ export function ScheduleBlock({ event, onEdit, onDelete }: ScheduleBlockProps) {
   const colorClass = eventColors[event.type as keyof typeof eventColors] || eventColors.OTRO
   const courseColor = event.course?.color || '#3b82f6'
 
-  // Calcular altura basada en duración (60px por hora)
-  const height = Math.max(duration, 30) // Mínimo 30px
+  // Calcular posicion vertical basada en los minutos
+  // Si el evento empieza a las 10:25, debe estar 25px hacia abajo en la celda de 10:00
+  const startMinutes = startDate.getMinutes()
+  const topOffset = (startMinutes / 60) * 60 // 60px = altura de una celda (hora)
+
+  // Calcular altura basada en duracion
+  const height = Math.max(duration, 20) // Minimo 20px
+
+  // Calcular cuantas celdas de hora ocupa el evento
+  const startHour = startDate.getHours()
+  const endHour = endDate ? endDate.getHours() : startHour
+  const numCells = endHour - startHour + 1
 
   return (
     <div
-      className={`absolute inset-0 m-0.5 p-2 rounded-lg border-l-2 ${colorClass} hover:shadow-md transition-shadow group`}
+      className={`absolute left-0.5 right-0.5 p-1 rounded-lg border-l-2 ${colorClass} hover:shadow-md transition-shadow group cursor-pointer`}
       style={{
-        minHeight: `${height}px`,
+        top: `${topOffset}px`,
+        height: `${height}px`,
+        minHeight: '20px',
         borderLeftColor: courseColor,
-        borderLeftWidth: '4px',
+        borderLeftWidth: '3px',
+        zIndex: 10,
       }}
       onClick={(e) => {
         e.stopPropagation()
@@ -67,35 +80,36 @@ export function ScheduleBlock({ event, onEdit, onDelete }: ScheduleBlockProps) {
     >
       <div className="flex flex-col h-full">
         {/* Título del curso/evento */}
-        <div className="font-semibold text-xs leading-tight truncate">
+        <div className="font-semibold text-[10px] leading-tight truncate">
           {event.course?.code || event.title}
         </div>
 
         {/* Sala */}
         {event.location && (
-          <div className="text-[10px] opacity-75 truncate mt-0.5">
-            📍 {event.location}
+          <div className="text-[9px] opacity-75 truncate mt-0.5">
+            {event.location}
           </div>
         )}
 
         {/* Hora */}
-        <div className="text-[10px] opacity-60 mt-auto">
+        <div className="text-[9px] opacity-60 mt-auto">
           {format(startDate, 'HH:mm')}
           {endDate && ` - ${format(endDate, 'HH:mm')}`}
         </div>
 
         {/* Botones de acción (visible en hover) */}
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+        <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 bg-white/80 dark:bg-slate-800/80 rounded">
           <Button
             size="icon"
             variant="ghost"
-            className="h-5 w-5 p-0 hover:bg-white/50"
+            className="h-4 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/30"
             onClick={(e) => {
               e.stopPropagation()
               onDelete()
             }}
+            title="Eliminar"
           >
-            <Trash2 className="h-2.5 w-2.5" />
+            <Trash2 className="h-2.5 w-2.5 text-red-600 dark:text-red-400" />
           </Button>
         </div>
       </div>

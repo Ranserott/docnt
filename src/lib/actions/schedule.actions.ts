@@ -161,9 +161,22 @@ export async function createScheduleBlock(data: {
       }
     }
 
-    // Calcular la fecha del evento (primer lunes a las 7:00 como referencia)
+    // Calcular la fecha del evento para el dia de la semana seleccionado
     const baseDate = new Date()
-    baseDate.setDate(baseDate.getDate() - baseDate.getDay() + data.dayOfWeek)
+    const currentDay = baseDate.getDay() // 0 = Domingo, 1 = Lunes, etc.
+
+    // Ajustar dayOfWeek para usar lunes como 0 (como en el UI)
+    const targetDay = parseInt(data.dayOfWeek.toString())
+
+    // Calcular diferencia de dias
+    // currentDay: 0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab
+    // targetDay: 0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab (viene del UI)
+    const daysDiff = targetDay - currentDay
+
+    // Si el dia ya paso esta semana, ir a la proxima semana
+    const daysToAdd = daysDiff < 0 ? daysDiff + 7 : daysDiff
+
+    baseDate.setDate(baseDate.getDate() + daysToAdd)
     baseDate.setHours(data.startHour, data.startMinute, 0, 0)
 
     const endDate = new Date(baseDate)

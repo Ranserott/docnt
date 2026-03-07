@@ -104,11 +104,23 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
   // Agrupar eventos por dia y hora
   const getEventsForSlot = (dayIndex: number, hour: number) => {
     return events.filter((event) => {
-      const eventDay = getDay(new Date(event.startDate))
-      const eventHour = new Date(event.startDate).getHours()
+      const startDate = new Date(event.startDate)
+      const endDate = event.endDate ? new Date(event.endDate) : startDate
+
+      const eventDay = getDay(startDate)
       // Ajustar dia de la semana (0=Dom, 1=Lun, etc.) a nuestro indice (0=Lun, 6=Dom)
       const adjustedDay = eventDay === 0 ? 6 : eventDay - 1
-      return adjustedDay === dayIndex && eventHour === hour
+
+      // Verificar si el evento ocurre durante esta hora
+      // Un evento de 10:25 a 11:25 debe mostrarse en las filas de 10:00 y 11:00
+      const eventStartHour = startDate.getHours()
+      const eventEndHour = endDate.getHours()
+
+      // El evento esta en este dia y se superpone con esta hora
+      const isSameDay = adjustedDay === dayIndex
+      const overlapsWithHour = hour >= eventStartHour && hour <= eventEndHour
+
+      return isSameDay && overlapsWithHour
     })
   }
 
