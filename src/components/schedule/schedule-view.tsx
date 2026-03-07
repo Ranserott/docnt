@@ -16,7 +16,7 @@ import { ScheduleBlock } from './schedule-block'
 import { deleteScheduleBlock } from '@/lib/actions/schedule.actions'
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7) // 7:00 a 22:00
-const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const DAYS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
 
 const eventColors = {
   CLASE: 'bg-green-100 text-green-800 border-green-400 dark:bg-green-900/40 dark:text-green-200 dark:border-green-600',
@@ -91,7 +91,7 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
   }
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (confirm('¿Estás seguro de eliminar este bloque de horario?')) {
+    if (confirm('Estas seguro de eliminar este bloque de horario?')) {
       await deleteScheduleBlock(eventId)
       reloadEvents()
     }
@@ -101,12 +101,12 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 })
   const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }))
 
-  // Agrupar eventos por día y hora
+  // Agrupar eventos por dia y hora
   const getEventsForSlot = (dayIndex: number, hour: number) => {
     return events.filter((event) => {
       const eventDay = getDay(new Date(event.startDate))
       const eventHour = new Date(event.startDate).getHours()
-      // Ajustar día de la semana (0=Dom, 1=Lun, etc.) a nuestro índice (0=Lun, 6=Dom)
+      // Ajustar dia de la semana (0=Dom, 1=Lun, etc.) a nuestro indice (0=Lun, 6=Dom)
       const adjustedDay = eventDay === 0 ? 6 : eventDay - 1
       return adjustedDay === dayIndex && eventHour === hour
     })
@@ -175,7 +175,7 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <div className="min-w-[1000px]">
-              {/* Encabezado de días */}
+              {/* Encabezado de dias */}
               <div className="grid grid-cols-8 border-b border-slate-200 dark:border-slate-800">
                 <div className="p-3 text-center font-semibold text-sm text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-800">
                   Hora
@@ -208,7 +208,7 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
                     {hour}:00
                   </div>
 
-                  {/* Columnas de días */}
+                  {/* Columnas de dias */}
                   {DAYS.map((_, dayIndex) => {
                     const slotEvents = getEventsForSlot(dayIndex, hour)
 
@@ -225,7 +225,7 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
                             onEdit={(e) => handleEventClick(e, event)}
                             onDelete={() => handleDeleteEvent(event.id)}
                           />
-                        )}
+                        ))}
                       </div>
                     )
                   })}
@@ -236,7 +236,7 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
         </CardContent>
       </Card>
 
-      {/* Diálogo para crear/editar */}
+      {/* Dialogo para crear/editar */}
       <ScheduleDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
