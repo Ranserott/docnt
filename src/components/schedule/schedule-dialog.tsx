@@ -390,10 +390,7 @@ export function ScheduleDialog({
               </Select>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Duración: {Math.round(
-                ((parseInt(formData.endHour) * 60 + parseInt(formData.endMinute)) -
-                (parseInt(formData.startHour) * 60 + parseInt(formData.startMinute)))
-              } minutos
+              Duracion: {Math.round((parseInt(formData.endHour) * 60 + parseInt(formData.endMinute)) - (parseInt(formData.startHour) * 60 + parseInt(formData.startMinute)))} minutos
             </p>
           </div>
 
