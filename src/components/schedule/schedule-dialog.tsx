@@ -31,15 +31,6 @@ const DAYS = [
   { value: '0', label: 'Domingo' },
 ]
 
-const DURATION_OPTIONS = [
-  { value: '30', label: '30 minutos' },
-  { value: '60', label: '1 hora' },
-  { value: '90', label: '1.5 horas' },
-  { value: '120', label: '2 horas' },
-  { value: '150', label: '2.5 horas' },
-  { value: '180', label: '3 horas' },
-]
-
 const EVENT_TYPES = [
   { value: 'CLASE', label: 'Clase' },
   { value: 'AYUDANTIA', label: 'Ayudantía' },
@@ -66,7 +57,9 @@ export function ScheduleDialog({
     location: '',
     dayOfWeek: '1',
     startHour: '8',
-    duration: '90',
+    startMinute: '0',
+    endHour: '9',
+    endMinute: '30',
     isRecurring: true,
   })
 
@@ -77,7 +70,6 @@ export function ScheduleDialog({
         // Modo edición
         const startDate = new Date(editingEvent.startDate)
         const endDate = editingEvent.endDate ? new Date(editingEvent.endDate) : null
-        const duration = endDate ? (endDate.getTime() - startDate.getTime()) / (1000 * 60) : 90
         const dayOfWeek = startDate.getDay().toString()
 
         setFormData({
@@ -88,8 +80,10 @@ export function ScheduleDialog({
           sectionId: editingEvent.sectionId || '',
           location: editingEvent.location || '',
           dayOfWeek,
-          startHour: startDate.getHours().toString(),
-          duration: duration.toString(),
+          startHour: startDate.getHours().toString().padStart(2, '0'),
+          startMinute: startDate.getMinutes().toString().padStart(2, '0'),
+          endHour: endDate ? endDate.getHours().toString().padStart(2, '0') : '9',
+          endMinute: endDate ? endDate.getMinutes().toString().padStart(2, '0') : '30',
           isRecurring: editingEvent.isRecurring || false,
         })
       } else if (selectedSlot) {
@@ -102,8 +96,10 @@ export function ScheduleDialog({
           sectionId: '',
           location: '',
           dayOfWeek: selectedSlot.day.toString(),
-          startHour: selectedSlot.hour.toString(),
-          duration: '90',
+          startHour: selectedSlot.hour.toString().padStart(2, '0'),
+          startMinute: '0',
+          endHour: (selectedSlot.hour + 1).toString().padStart(2, '0'),
+          endMinute: '30',
           isRecurring: true,
         })
       } else {
@@ -116,8 +112,10 @@ export function ScheduleDialog({
           sectionId: '',
           location: '',
           dayOfWeek: '1',
-          startHour: '8',
-          duration: '90',
+          startHour: '08',
+          startMinute: '0',
+          endHour: '09',
+          endMinute: '30',
           isRecurring: true,
         })
       }
@@ -129,6 +127,22 @@ export function ScheduleDialog({
     setLoading(true)
 
     try {
+      // Calcular duración basada en hora inicio y hora fin
+      const startDateTime = new Date()
+      startDateTime.setHours(parseInt(formData.startHour), parseInt(formData.startMinute), 0, 0)
+
+      const endDateTime = new Date()
+      endDateTime.setHours(parseInt(formData.endHour), parseInt(formData.endMinute), 0, 0)
+
+      // Validar que hora fin sea posterior a hora inicio
+      if (endDateTime <= startDateTime) {
+        alert('La hora de fin debe ser posterior a la hora de inicio')
+        setLoading(false)
+        return
+      }
+
+      const duration = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60)
+
       if (editingEvent) {
         // Actualizar evento existente
         await updateScheduleBlock(editingEvent.id, {
@@ -140,7 +154,8 @@ export function ScheduleDialog({
           location: formData.location || undefined,
           dayOfWeek: parseInt(formData.dayOfWeek),
           startHour: parseInt(formData.startHour),
-          duration: parseInt(formData.duration),
+          startMinute: parseInt(formData.startMinute),
+          duration: Math.round(duration),
           isRecurring: formData.isRecurring,
         })
       } else {
@@ -154,8 +169,8 @@ export function ScheduleDialog({
           location: formData.location || undefined,
           dayOfWeek: parseInt(formData.dayOfWeek),
           startHour: parseInt(formData.startHour),
-          startMinute: 0,
-          duration: parseInt(formData.duration),
+          startMinute: parseInt(formData.startMinute),
+          duration: Math.round(duration),
           isRecurring: formData.isRecurring,
         })
       }
@@ -282,29 +297,30 @@ export function ScheduleDialog({
             />
           </div>
 
-          {/* Día y hora */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="day">Día</Label>
-              <Select
-                value={formData.dayOfWeek}
-                onValueChange={(value) => setFormData({ ...formData, dayOfWeek: value })}
-              >
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Día" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAYS.map((day) => (
-                    <SelectItem key={day.value} value={day.value}>
-                      {day.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Día y horario */}
+          <div>
+            <Label>Día de la semana</Label>
+            <Select
+              value={formData.dayOfWeek}
+              onValueChange={(value) => setFormData({ ...formData, dayOfWeek: value })}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="Día" />
+              </SelectTrigger>
+              <SelectContent>
+                {DAYS.map((day) => (
+                  <SelectItem key={day.value} value={day.value}>
+                    {day.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div>
-              <Label htmlFor="startHour">Hora Inicio</Label>
+          {/* Hora inicio */}
+          <div>
+            <Label>Hora de inicio</Label>
+            <div className="grid grid-cols-2 gap-2">
               <Select
                 value={formData.startHour}
                 onValueChange={(value) => setFormData({ ...formData, startHour: value })}
@@ -314,8 +330,23 @@ export function ScheduleDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {Array.from({ length: 16 }, (_, i) => i + 7).map((hour) => (
-                    <SelectItem key={hour} value={hour.toString()}>
-                      {hour}:00
+                    <SelectItem key={hour} value={hour.toString().padStart(2, '0')}>
+                      {hour.toString().padStart(2, '0')}:00
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={formData.startMinute}
+                onValueChange={(value) => setFormData({ ...formData, startMinute: value })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Min" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i * 5).map((min) => (
+                    <SelectItem key={min} value={min.toString().padStart(2, '0')}>
+                      {min.toString().padStart(2, '0')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -323,24 +354,47 @@ export function ScheduleDialog({
             </div>
           </div>
 
-          {/* Duración */}
+          {/* Hora fin */}
           <div>
-            <Label htmlFor="duration">Duración</Label>
-            <Select
-              value={formData.duration}
-              onValueChange={(value) => setFormData({ ...formData, duration: value })}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Duración" />
-              </SelectTrigger>
-              <SelectContent>
-                {DURATION_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Hora de fin</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                value={formData.endHour}
+                onValueChange={(value) => setFormData({ ...formData, endHour: value })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Hora" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 16 }, (_, i) => i + 7).map((hour) => (
+                    <SelectItem key={hour} value={hour.toString().padStart(2, '0')}>
+                      {hour.toString().padStart(2, '0')}:00
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={formData.endMinute}
+                onValueChange={(value) => setFormData({ ...formData, endMinute: value })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Min" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i * 5).map((min) => (
+                    <SelectItem key={min} value={min.toString().padStart(2, '0')}>
+                      {min.toString().padStart(2, '0')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Duración: {Math.round(
+                ((parseInt(formData.endHour) * 60 + parseInt(formData.endMinute)) -
+                (parseInt(formData.startHour) * 60 + parseInt(formData.startMinute)))
+              } minutos
+            </p>
           </div>
 
           {/* Recurrente */}
