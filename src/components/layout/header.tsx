@@ -63,7 +63,7 @@ export function Header() {
               className="h-9 w-9 lg:h-11 lg:w-11 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <Avatar className="h-7 w-7 lg:h-9 lg:w-9">
-                <AvatarImage src="/avatar.png" alt="Usuario" />
+                {/* <AvatarImage src="/avatar.png" alt="Usuario" /> */}
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                   <User className="h-3 w-3 lg:h-5 lg:w-5" />
                 </AvatarFallback>

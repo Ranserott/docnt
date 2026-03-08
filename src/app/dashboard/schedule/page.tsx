@@ -52,6 +52,7 @@ export default async function SchedulePage() {
       <ScheduleView
         initialEvents={eventsResult.data || []}
         courses={coursesWithSections}
+        initialDate={weekStart.getTime()}
       />
     </div>
   )

@@ -15,6 +15,35 @@ import { ScheduleDialog } from './schedule-dialog'
 import { ScheduleBlock } from './schedule-block'
 import { deleteScheduleBlock } from '@/lib/actions/schedule.actions'
 
+interface ScheduleEvent {
+  id: string
+  title: string
+  type: string
+  location?: string | null
+  startDate: Date | string | number
+  endDate: Date | string | number | null
+  course?: {
+    id: string
+    name: string
+    color: string | null
+    code?: string | null
+  } | null
+  section?: {
+    id: string
+    name: string
+  } | null
+}
+
+interface CourseWithSections {
+  id: string
+  name: string
+  sections: {
+    id: string
+    name: string
+    active: boolean
+  }[]
+}
+
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7) // 7:00 a 22:00
 const DAYS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
 
@@ -27,18 +56,24 @@ const eventColors = {
 }
 
 interface ScheduleViewProps {
-  initialEvents: any[]
-  courses: any[]
+  initialEvents: ScheduleEvent[]
+  courses: CourseWithSections[]
+  initialDate: Date | number | string
 }
 
-export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
-  const [currentWeek, setCurrentWeek] = useState(new Date())
-  const [events, setEvents] = useState(initialEvents)
+export function ScheduleView({ initialEvents, courses, initialDate }: ScheduleViewProps) {
+  const [currentWeek, setCurrentWeek] = useState(new Date(initialDate))
+  const [events, setEvents] = useState<ScheduleEvent[]>(initialEvents)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<{ day: number; hour: number } | null>(null)
-  const [editingEvent, setEditingEvent] = useState<any>(null)
+  const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null)
   const [loading, setLoading] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Recargar eventos cuando cambia la semana, pero no en la carga inicial
   useEffect(() => {
@@ -88,7 +123,7 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
     setDialogOpen(true)
   }
 
-  const handleEventClick = (e: React.MouseEvent, event: any) => {
+  const handleEventClick = (e: React.MouseEvent, event: ScheduleEvent) => {
     e.stopPropagation()
     setEditingEvent(event)
     setSelectedSlot(null)
@@ -137,6 +172,26 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
 
       return isSameDay && overlapsWithHour
     })
+  }
+
+  if (!mounted) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+          <div className="flex gap-2">
+            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+            <div className="h-9 w-20 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+          </div>
+        </div>
+        <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
+          <CardContent className="p-0">
+            <div className="h-[600px] bg-slate-50 dark:bg-slate-900/50 animate-pulse" />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
