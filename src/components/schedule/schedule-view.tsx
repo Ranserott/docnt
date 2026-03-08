@@ -69,11 +69,6 @@ export function ScheduleView({ initialEvents, courses, initialDate }: ScheduleVi
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null)
   const [loading, setLoading] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Recargar eventos cuando cambia la semana, pero no en la carga inicial
   useEffect(() => {
@@ -144,16 +139,16 @@ export function ScheduleView({ initialEvents, courses, initialDate }: ScheduleVi
   // Agrupar eventos por dia y hora
   const getEventsForSlot = (dayIndex: number, hour: number) => {
     return events.filter((event) => {
-      const startDate = event.startDate instanceof Date
-        ? event.startDate
-        : typeof event.startDate === 'number'
+      const startDate = typeof event.startDate === 'string'
         ? new Date(event.startDate)
+        : event.startDate instanceof Date
+        ? event.startDate
         : new Date(event.startDate)
       const endDate = event.endDate
-        ? (event.endDate instanceof Date
-          ? event.endDate
-          : typeof event.endDate === 'number'
+        ? (typeof event.endDate === 'string'
           ? new Date(event.endDate)
+          : event.endDate instanceof Date
+          ? event.endDate
           : new Date(event.endDate))
         : startDate
 
@@ -172,26 +167,6 @@ export function ScheduleView({ initialEvents, courses, initialDate }: ScheduleVi
 
       return isSameDay && overlapsWithHour
     })
-  }
-
-  if (!mounted) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-          <div className="flex gap-2">
-            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-            <div className="h-9 w-20 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-          </div>
-        </div>
-        <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
-          <CardContent className="p-0">
-            <div className="h-[600px] bg-slate-50 dark:bg-slate-900/50 animate-pulse" />
-          </CardContent>
-        </Card>
-      </div>
-    )
   }
 
   return (

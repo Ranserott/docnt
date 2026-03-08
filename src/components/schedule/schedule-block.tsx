@@ -42,16 +42,16 @@ const eventColors = {
 }
 
 export function ScheduleBlock({ event, onEdit, onDelete }: ScheduleBlockProps) {
-  const startDate = event.startDate instanceof Date
-    ? event.startDate
-    : typeof event.startDate === 'number'
+  const startDate = typeof event.startDate === 'string'
     ? new Date(event.startDate)
+    : event.startDate instanceof Date
+    ? event.startDate
     : new Date(event.startDate)
   const endDate = event.endDate
-    ? (event.endDate instanceof Date
-      ? event.endDate
-      : typeof event.endDate === 'number'
+    ? (typeof event.endDate === 'string'
       ? new Date(event.endDate)
+      : event.endDate instanceof Date
+      ? event.endDate
       : new Date(event.endDate))
     : null
   const duration = endDate ? (endDate.getTime() - startDate.getTime()) / (1000 * 60) : 60

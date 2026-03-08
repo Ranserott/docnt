@@ -54,7 +54,7 @@ export function EventDialog({ open, onOpenChange, event, date, courses, onEventC
 
     try {
       // Usar la fecha seleccionada o la del evento existente
-      const eventDate = event
+      const baseDate = event
         ? (typeof event.startDate === 'number'
           ? new Date(event.startDate)
           : event.startDate instanceof Date
@@ -62,17 +62,23 @@ export function EventDialog({ open, onOpenChange, event, date, courses, onEventC
           : new Date(event.startDate))
         : (date || new Date())
 
-      // Crear evento para todo el día (desde 00:00 hasta 23:59 del mismo día)
-      const startDate = new Date(eventDate)
-      startDate.setHours(0, 0, 0, 0)
+      // Crear fecha local sin conversión UTC
+      const year = baseDate.getFullYear()
+      const month = baseDate.getMonth()
+      const day = baseDate.getDate()
 
-      const endDate = new Date(eventDate)
-      endDate.setHours(23, 59, 59, 999)
+      // Crear evento para todo el día usando ISO string con hora local
+      const startDate = new Date(year, month, day, 0, 0, 0)
+      const endDate = new Date(year, month, day, 23, 59, 59)
+
+      // Crear ISO strings preservando la hora local
+      const startDateISO = new Date(year, month, day, 0, 0, 0).toISOString()
+      const endDateISO = new Date(year, month, day, 23, 59, 59).toISOString()
 
       const data = {
         ...formData,
-        startDate: startDate.getTime(),
-        endDate: endDate.getTime(),
+        startDate: startDateISO,
+        endDate: endDateISO,
         courseId: formData.courseId || undefined,
         sectionId: formData.sectionId || undefined,
         status: 'scheduled',

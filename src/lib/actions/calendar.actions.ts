@@ -81,13 +81,9 @@ export async function getEvents(params?: {
     })
 
     // Transformar los datos para incluir solo los tags necesarios
-    // Convertir fechas a timestamps para evitar problemas de hidratacion y zona horaria
+    // Mantener fechas como ISO strings (Prisma ya lo hace automáticamente)
     const transformedEvents = events.map((event: typeof events[0]) => ({
       ...event,
-      startDate: event.startDate.getTime(),
-      endDate: event.endDate?.getTime() || null,
-      createdAt: event.createdAt.getTime(),
-      updatedAt: event.updatedAt.getTime(),
       tags: event.tags.map((et: typeof event.tags[0]) => et.tag),
       files: event.files.map((ef: typeof event.files[0]) => ef.file),
     }))
@@ -199,16 +195,8 @@ export async function getUpcomingEvents() {
       take: 10,
     })
 
-    // Convertir fechas a timestamps para evitar problemas de hidratacion y zona horaria
-    const transformedEvents = events.map((event) => ({
-      ...event,
-      startDate: event.startDate.getTime(),
-      endDate: event.endDate?.getTime() || null,
-      createdAt: event.createdAt.getTime(),
-      updatedAt: event.updatedAt.getTime(),
-    }))
-
-    return { data: transformedEvents }
+    // Prisma serializa las fechas como ISO strings automáticamente
+    return { data: events }
   } catch (error) {
     console.error('Error al obtener próximos eventos:', error)
     return { error: 'Error al obtener próximos eventos' }
@@ -237,7 +225,7 @@ export async function createEvent(data: EventFormData) {
   try {
     const { tagIds, startDate, endDate, ...eventData } = validatedData.data
 
-    // Convertir timestamps a objetos Date
+    // Convertir ISO strings a objetos Date
     const startDateObj = new Date(startDate)
     const endDateObj = endDate ? new Date(endDate) : null
 
@@ -322,7 +310,7 @@ export async function updateEvent(eventId: string, data: Partial<EventUpdateData
   try {
     const { id, tagIds, startDate, endDate, ...eventData } = validatedData.data
 
-    // Convertir timestamps a objetos Date si se proporcionaron
+    // Convertir ISO strings a objetos Date si se proporcionaron
     const updateData: any = { ...eventData }
     if (startDate !== undefined) {
       updateData.startDate = new Date(startDate)

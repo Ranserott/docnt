@@ -107,18 +107,15 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
 
   const getEventsForDate = (date: Date) => {
     return events.filter((event) => {
-      // Manejar fechas como timestamps, strings ISO u objetos Date
-      const eventDate = event.startDate instanceof Date
-        ? event.startDate
-        : typeof event.startDate === 'number'
+      // Convertir a Date si es string ISO
+      const eventDate = typeof event.startDate === 'string'
         ? new Date(event.startDate)
+        : event.startDate instanceof Date
+        ? event.startDate
         : new Date(event.startDate)
 
-      // Usar solo la parte de la fecha (sin hora) para comparar
-      const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-      const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
-
-      return dateOnly.getTime() === eventDateOnly.getTime()
+      // Usar isSameDay de date-fns para comparación correcta
+      return isSameDay(eventDate, date)
     })
   }
 
@@ -306,30 +303,9 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
                   {viewingEvent.title}
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {format(
-                    viewingEvent.startDate instanceof Date
-                      ? viewingEvent.startDate
-                      : typeof viewingEvent.startDate === 'number'
-                      ? new Date(viewingEvent.startDate)
-                      : new Date(viewingEvent.startDate),
-                    'EEEE d MMMM, yyyy', { locale: es }
-                  )}
+                  {format(new Date(viewingEvent.startDate), 'EEEE d MMMM, yyyy', { locale: es })}
                   {!viewingEvent.allDay && viewingEvent.endDate && (
-                    <> • {format(
-                      viewingEvent.startDate instanceof Date
-                        ? viewingEvent.startDate
-                        : typeof viewingEvent.startDate === 'number'
-                        ? new Date(viewingEvent.startDate)
-                        : new Date(viewingEvent.startDate),
-                      'HH:mm', { locale: es }
-                    )} - {format(
-                      viewingEvent.endDate instanceof Date
-                        ? viewingEvent.endDate
-                        : typeof viewingEvent.endDate === 'number'
-                        ? new Date(viewingEvent.endDate)
-                        : new Date(viewingEvent.endDate),
-                      'HH:mm', { locale: es }
-                    )}</>
+                    <> • {format(new Date(viewingEvent.startDate), 'HH:mm', { locale: es })} - {format(new Date(viewingEvent.endDate), 'HH:mm', { locale: es })}</>
                   )}
                   {viewingEvent.allDay && (
                     <> • Todo el día</>
