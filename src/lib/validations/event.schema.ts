@@ -11,10 +11,8 @@ export const eventFormSchema = z.object({
   type: z.nativeEnum(EventType, {
     required_error: 'El tipo de evento es requerido',
   }),
-  startDate: z.date({
-    required_error: 'La fecha de inicio es requerida',
-  }),
-  endDate: z.date().optional(),
+  startDate: z.number(), // Timestamp en milisegundos
+  endDate: z.number().nullable().optional(), // Timestamp en milisegundos
   allDay: z.boolean().default(false),
   location: z.string().max(200, 'Máximo 200 caracteres').optional(),
   notes: z.string().max(5000, 'Máximo 5000 caracteres').optional(),

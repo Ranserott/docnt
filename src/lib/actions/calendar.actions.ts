@@ -235,12 +235,18 @@ export async function createEvent(data: EventFormData) {
   }
 
   try {
-    const { tagIds, ...eventData } = validatedData.data
+    const { tagIds, startDate, endDate, ...eventData } = validatedData.data
+
+    // Convertir timestamps a objetos Date
+    const startDateObj = new Date(startDate)
+    const endDateObj = endDate ? new Date(endDate) : null
 
     // Crear el evento
     const event = await prisma.event.create({
       data: {
         ...eventData,
+        startDate: startDateObj,
+        endDate: endDateObj,
         userId: session.user.id,
         tags: tagIds && tagIds.length > 0
           ? {
@@ -314,12 +320,21 @@ export async function updateEvent(eventId: string, data: Partial<EventUpdateData
   }
 
   try {
-    const { id, tagIds, ...eventData } = validatedData.data
+    const { id, tagIds, startDate, endDate, ...eventData } = validatedData.data
+
+    // Convertir timestamps a objetos Date si se proporcionaron
+    const updateData: any = { ...eventData }
+    if (startDate !== undefined) {
+      updateData.startDate = new Date(startDate)
+    }
+    if (endDate !== undefined) {
+      updateData.endDate = endDate ? new Date(endDate) : null
+    }
 
     // Actualizar el evento
     const event = await prisma.event.update({
       where: { id: eventId },
-      data: eventData,
+      data: updateData,
       include: {
         course: {
           select: {

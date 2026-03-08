@@ -54,7 +54,13 @@ export function EventDialog({ open, onOpenChange, event, date, courses, onEventC
 
     try {
       // Usar la fecha seleccionada o la del evento existente
-      const eventDate = event ? new Date(event.startDate) : (date || new Date())
+      const eventDate = event
+        ? (typeof event.startDate === 'number'
+          ? new Date(event.startDate)
+          : event.startDate instanceof Date
+          ? event.startDate
+          : new Date(event.startDate))
+        : (date || new Date())
 
       // Crear evento para todo el día (desde 00:00 hasta 23:59 del mismo día)
       const startDate = new Date(eventDate)
@@ -65,8 +71,8 @@ export function EventDialog({ open, onOpenChange, event, date, courses, onEventC
 
       const data = {
         ...formData,
-        startDate,
-        endDate,
+        startDate: startDate.getTime(),
+        endDate: endDate.getTime(),
         courseId: formData.courseId || undefined,
         sectionId: formData.sectionId || undefined,
         status: 'scheduled',
