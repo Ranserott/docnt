@@ -81,13 +81,13 @@ export async function getEvents(params?: {
     })
 
     // Transformar los datos para incluir solo los tags necesarios
-    // Convertir fechas a strings ISO para evitar problemas de hidratacion
+    // Convertir fechas a timestamps para evitar problemas de hidratacion y zona horaria
     const transformedEvents = events.map((event: typeof events[0]) => ({
       ...event,
-      startDate: event.startDate.toISOString(),
-      endDate: event.endDate?.toISOString() || null,
-      createdAt: event.createdAt.toISOString(),
-      updatedAt: event.updatedAt.toISOString(),
+      startDate: event.startDate.getTime(),
+      endDate: event.endDate?.getTime() || null,
+      createdAt: event.createdAt.getTime(),
+      updatedAt: event.updatedAt.getTime(),
       tags: event.tags.map((et: typeof event.tags[0]) => et.tag),
       files: event.files.map((ef: typeof event.files[0]) => ef.file),
     }))
@@ -199,13 +199,13 @@ export async function getUpcomingEvents() {
       take: 10,
     })
 
-    // Convertir fechas a strings ISO para evitar problemas de hidratacion
+    // Convertir fechas a timestamps para evitar problemas de hidratacion y zona horaria
     const transformedEvents = events.map((event) => ({
       ...event,
-      startDate: event.startDate.toISOString(),
-      endDate: event.endDate?.toISOString() || null,
-      createdAt: event.createdAt.toISOString(),
-      updatedAt: event.updatedAt.toISOString(),
+      startDate: event.startDate.getTime(),
+      endDate: event.endDate?.getTime() || null,
+      createdAt: event.createdAt.getTime(),
+      updatedAt: event.updatedAt.getTime(),
     }))
 
     return { data: transformedEvents }

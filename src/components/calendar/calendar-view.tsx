@@ -37,6 +37,7 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewingEvent, setViewingEvent] = useState<any>(null)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   // Función para recargar eventos
   const reloadEvents = async () => {
@@ -46,10 +47,14 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
     }
   }
 
-  // Recargar eventos cuando cambia el mes
+  // Recargar eventos cuando cambia el mes, pero no en la carga inicial
   useEffect(() => {
-    reloadEvents()
-  }, [currentDate])
+    if (!isInitialLoad) {
+      reloadEvents()
+    } else {
+      setIsInitialLoad(false)
+    }
+  }, [currentDate, isInitialLoad])
 
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -102,11 +107,18 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
 
   const getEventsForDate = (date: Date) => {
     return events.filter((event) => {
-      // Manejar fechas como strings ISO u objetos Date
+      // Manejar fechas como timestamps, strings ISO u objetos Date
       const eventDate = event.startDate instanceof Date
         ? event.startDate
+        : typeof event.startDate === 'number'
+        ? new Date(event.startDate)
         : new Date(event.startDate)
-      return isSameDay(eventDate, date)
+
+      // Usar solo la parte de la fecha (sin hora) para comparar
+      const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
+
+      return dateOnly.getTime() === eventDateOnly.getTime()
     })
   }
 
@@ -294,9 +306,30 @@ export function CalendarView({ initialEvents, courses }: CalendarViewProps) {
                   {viewingEvent.title}
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {format(new Date(viewingEvent.startDate), 'EEEE d MMMM, yyyy', { locale: es })}
+                  {format(
+                    viewingEvent.startDate instanceof Date
+                      ? viewingEvent.startDate
+                      : typeof viewingEvent.startDate === 'number'
+                      ? new Date(viewingEvent.startDate)
+                      : new Date(viewingEvent.startDate),
+                    'EEEE d MMMM, yyyy', { locale: es }
+                  )}
                   {!viewingEvent.allDay && viewingEvent.endDate && (
-                    <> • {format(new Date(viewingEvent.startDate), 'HH:mm', { locale: es })} - {format(new Date(viewingEvent.endDate), 'HH:mm', { locale: es })}</>
+                    <> • {format(
+                      viewingEvent.startDate instanceof Date
+                        ? viewingEvent.startDate
+                        : typeof viewingEvent.startDate === 'number'
+                        ? new Date(viewingEvent.startDate)
+                        : new Date(viewingEvent.startDate),
+                      'HH:mm', { locale: es }
+                    )} - {format(
+                      viewingEvent.endDate instanceof Date
+                        ? viewingEvent.endDate
+                        : typeof viewingEvent.endDate === 'number'
+                        ? new Date(viewingEvent.endDate)
+                        : new Date(viewingEvent.endDate),
+                      'HH:mm', { locale: es }
+                    )}</>
                   )}
                   {viewingEvent.allDay && (
                     <> • Todo el día</>

@@ -118,7 +118,16 @@ export async function getWeeklyEvents(weekStart: Date) {
       return instances
     })
 
-    return { data: expandedEvents }
+    // Convertir fechas a timestamps para evitar problemas de hidratacion y zona horaria
+    const transformedEvents = expandedEvents.map((event) => ({
+      ...event,
+      startDate: event.startDate.getTime(),
+      endDate: event.endDate?.getTime() || null,
+      createdAt: event.createdAt.getTime(),
+      updatedAt: event.updatedAt.getTime(),
+    }))
+
+    return { data: transformedEvents }
   } catch (error) {
     console.error('Error al obtener eventos semanales:', error)
     return { error: 'Error al obtener eventos' }

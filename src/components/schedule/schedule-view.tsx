@@ -38,11 +38,16 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
   const [selectedSlot, setSelectedSlot] = useState<{ day: number; hour: number } | null>(null)
   const [editingEvent, setEditingEvent] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Recargar eventos cuando cambia la semana
+  // Recargar eventos cuando cambia la semana, pero no en la carga inicial
   useEffect(() => {
-    reloadEvents()
-  }, [currentWeek])
+    if (!isInitialLoad) {
+      reloadEvents()
+    } else {
+      setIsInitialLoad(false)
+    }
+  }, [currentWeek, isInitialLoad])
 
   const reloadEvents = async () => {
     setLoading(true)
@@ -104,8 +109,18 @@ export function ScheduleView({ initialEvents, courses }: ScheduleViewProps) {
   // Agrupar eventos por dia y hora
   const getEventsForSlot = (dayIndex: number, hour: number) => {
     return events.filter((event) => {
-      const startDate = new Date(event.startDate)
-      const endDate = event.endDate ? new Date(event.endDate) : startDate
+      const startDate = event.startDate instanceof Date
+        ? event.startDate
+        : typeof event.startDate === 'number'
+        ? new Date(event.startDate)
+        : new Date(event.startDate)
+      const endDate = event.endDate
+        ? (event.endDate instanceof Date
+          ? event.endDate
+          : typeof event.endDate === 'number'
+          ? new Date(event.endDate)
+          : new Date(event.endDate))
+        : startDate
 
       const eventDay = getDay(startDate)
       // Ajustar dia de la semana (0=Dom, 1=Lun, etc.) a nuestro indice (0=Lun, 6=Dom)
