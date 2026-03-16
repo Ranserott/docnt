@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Plus, MapPin, Trash2, Edit } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MapPin, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/cn'
 import { Input } from '@/components/ui/input'
@@ -36,8 +36,8 @@ interface Section {
 interface ScheduleEvent {
   id: string
   title: string
-  startDate: Date
-  endDate?: Date | null
+  startDate: string
+  endDate?: string | null
   location?: string | null
   type: string
   isRecurring: boolean
@@ -89,10 +89,10 @@ const WEEKDAYS = [
 
 export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
   const [currentWeek, setCurrentWeek] = useState(() => new Date())
   const [events, setEvents] = useState<ScheduleEvent[]>(initialEvents)
   const [showAddDialog, setShowAddDialog] = useState(false)
-  const [selectedSlot, setSelectedSlot] = useState<{ day: number; hour: number } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
@@ -108,6 +108,10 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
     type: 'CLASE',
     isRecurring: true,
   })
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 })
   const weekEnd = addDays(weekStart, 6)
@@ -126,7 +130,6 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
   }
 
   const handleSlotClick = (day: number, hour: number) => {
-    setSelectedSlot({ day, hour })
     setFormData(prev => ({
       ...prev,
       dayOfWeek: day.toString(),
@@ -143,9 +146,9 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
       const result = await createScheduleBlock({
         courseId: formData.courseId || undefined,
         sectionId: formData.sectionId || undefined,
-        title: formData.title || 'Sin título',
+        title: formData.title || undefined,
         type: formData.type,
-        location: formData.location,
+        location: formData.location || undefined,
         dayOfWeek: parseInt(formData.dayOfWeek),
         startHour: parseInt(formData.startHour),
         startMinute: parseInt(formData.startMinute),
@@ -157,6 +160,19 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
         alert(result.error)
       } else {
         setShowAddDialog(false)
+        // Reset form
+        setFormData({
+          courseId: '',
+          sectionId: '',
+          title: '',
+          dayOfWeek: '1',
+          startHour: '8',
+          startMinute: '0',
+          duration: '90',
+          location: '',
+          type: 'CLASE',
+          isRecurring: true,
+        })
         router.refresh()
       }
     } catch (error) {
@@ -186,6 +202,24 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
   }
 
   const selectedCourse = courses.find(c => c.id === formData.courseId)
+
+  // Render placeholder during SSR to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
+          </CardHeader>
+        </Card>
+        <Card className="h-96">
+          <CardContent className="p-8">
+            <div className="h-full w-full bg-slate-100 rounded animate-pulse" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -351,7 +385,7 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
                   <Label htmlFor="course">Asignatura *</Label>
                   <Select
                     value={formData.courseId}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, courseId: value }))}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, courseId: value, sectionId: '' }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona una asignatura" />
@@ -385,19 +419,6 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                )}
-
-                {/* Título (opcional, si no se selecciona curso) */}
-                {!formData.courseId && (
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Título *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Ej: Reunión de facultad"
-                    />
                   </div>
                 )}
 
