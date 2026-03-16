@@ -78,6 +78,13 @@ export default async function SchedulePage() {
     orderBy: { startDate: 'asc' },
   })
 
+  // Convertir fechas de Date a string para el componente
+  const serializedEvents = events.map(event => ({
+    ...event,
+    startDate: event.startDate.toISOString(),
+    endDate: event.endDate?.toISOString() || null,
+  }))
+
   return (
     <div className="space-y-6">
       <div>
@@ -90,7 +97,7 @@ export default async function SchedulePage() {
       </div>
 
       <WeeklySchedule
-        initialEvents={events}
+        initialEvents={serializedEvents}
         courses={courses}
       />
     </div>
