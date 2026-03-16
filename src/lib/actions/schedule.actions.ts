@@ -179,16 +179,24 @@ export async function createScheduleBlock(data: {
 
     baseDate.setDate(baseDate.getDate() + daysToAdd)
     
-    // Ajustar zona horaria: Chile está en UTC-3 (o UTC-4 en verano)
-    // El servidor usa UTC, entonces restamos 3 horas para que al guardar en UTC
-    // y mostrar en Chile, aparezca la hora correcta
-    const chileOffset = 3 // UTC-3 (Chile)
-    const adjustedHour = data.startHour - chileOffset
+    // IMPORTANTE: Crear fechas en UTC para evitar problemas de zona horaria
+    // Chile está en UTC-3, pero el servidor usa UTC
+    // Por eso SUMAMOS 3 horas al guardar, para que al mostrar en Chile
+    // (que resta 3 horas) aparezca la hora correcta
+    const chileOffset = 3 // UTC-3 = sumar 3 horas al guardar en UTC
+    const utcHour = data.startHour + chileOffset
     
-    baseDate.setHours(adjustedHour, data.startMinute, 0, 0)
+    // Crear fecha en UTC
+    const utcDate = new Date(Date.UTC(
+      baseDate.getFullYear(),
+      baseDate.getMonth(),
+      baseDate.getDate(),
+      utcHour,
+      data.startMinute,
+      0
+    ))
 
-    const endDate = new Date(baseDate)
-    endDate.setMinutes(endDate.getMinutes() + data.duration)
+    const endDate = new Date(utcDate.getTime() + data.duration * 60000)
 
     const event = await prisma.event.create({
       data: {

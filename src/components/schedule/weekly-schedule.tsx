@@ -93,6 +93,8 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
   const [currentWeek, setCurrentWeek] = useState(() => new Date())
   const [events, setEvents] = useState<ScheduleEvent[]>(initialEvents)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showDetailDialog, setShowDetailDialog] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
@@ -138,6 +140,12 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
     setShowAddDialog(true)
   }
 
+  const handleEventClick = (event: ScheduleEvent, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedEvent(event)
+    setShowDetailDialog(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -146,7 +154,7 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
       const result = await createScheduleBlock({
         courseId: formData.courseId || undefined,
         sectionId: formData.sectionId || undefined,
-        title: formData.title || undefined,
+        title: formData.title ? formData.title : undefined,
         type: formData.type,
         location: formData.location || undefined,
         dayOfWeek: parseInt(formData.dayOfWeek),
@@ -314,12 +322,10 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
                               <div
                                 key={event.id}
                                 className={cn(
-                                  "absolute inset-1 rounded-md p-1.5 text-xs border overflow-hidden group",
+                                  "absolute inset-1 rounded-md p-1.5 text-xs border overflow-hidden group cursor-pointer",
                                   typeColors[event.type] || typeColors.OTRO
                                 )}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                }}
+                                onClick={(e) => handleEventClick(event, e)}
                               >
                                 <div className="flex items-start justify-between gap-1">
                                   <div className="font-semibold truncate flex-1">
@@ -566,6 +572,96 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de detalle del evento */}
+      {showDetailDialog && selectedEvent && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>Detalle del Evento</CardTitle>
+                  <p className="text-slate-500 text-sm mt-1">
+                    {typeLabels[selectedEvent.type] || selectedEvent.type}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDetailDialog(false)}
+                  className="p-1 hover:bg-slate-100 rounded"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Asignatura */}
+              <div>
+                <Label className="text-slate-500 text-sm">Asignatura</Label>
+                <p className="font-semibold">
+                  {selectedEvent.course?.name || selectedEvent.title}
+                </p>
+                {selectedEvent.course?.code && (
+                  <p className="text-slate-500 text-sm">
+                    Código: {selectedEvent.course.code}
+                  </p>
+                )}
+              </div>
+
+              {/* Sección */}
+              {selectedEvent.section && (
+                <div>
+                  <Label className="text-slate-500 text-sm">Sección</Label>
+                  <p>{selectedEvent.section.name}</p>
+                </div>
+              )}
+
+              {/* Horario */}
+              <div>
+                <Label className="text-slate-500 text-sm">Horario</Label>
+                <p>
+                  {format(new Date(selectedEvent.startDate), 'EEEE', { locale: es })}
+                  {' '}
+                  {format(new Date(selectedEvent.startDate), 'HH:mm', { locale: es })}
+                  {' - '}
+                  {selectedEvent.endDate
+                    ? format(new Date(selectedEvent.endDate), 'HH:mm', { locale: es })
+                    : 'Sin hora de fin'}
+                </p>
+              </div>
+
+              {/* Ubicación */}
+              {selectedEvent.location && (
+                <div>
+                  <Label className="text-slate-500 text-sm">Ubicación / Sala</Label>
+                  <p>{selectedEvent.location}</p>
+                </div>
+              )}
+
+              {/* Recurrente */}
+              <div>
+                <Label className="text-slate-500 text-sm">Recurrencia</Label>
+                <p>
+                  {selectedEvent.isRecurring
+                    ? 'Evento recurrente (se repite semanalmente)'
+                    : 'Evento único'}
+                </p>
+              </div>
+
+              {/* Botón eliminar */}
+              <div className="pt-4 border-t">
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(selectedEvent.id)}
+                  className="w-full"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar Evento
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
