@@ -178,7 +178,14 @@ export async function createScheduleBlock(data: {
     const daysToAdd = daysDiff < 0 ? daysDiff + 7 : daysDiff
 
     baseDate.setDate(baseDate.getDate() + daysToAdd)
-    baseDate.setHours(data.startHour, data.startMinute, 0, 0)
+    
+    // Ajustar zona horaria: Chile está en UTC-3 (o UTC-4 en verano)
+    // El servidor usa UTC, entonces restamos 3 horas para que al guardar en UTC
+    // y mostrar en Chile, aparezca la hora correcta
+    const chileOffset = 3 // UTC-3 (Chile)
+    const adjustedHour = data.startHour - chileOffset
+    
+    baseDate.setHours(adjustedHour, data.startMinute, 0, 0)
 
     const endDate = new Date(baseDate)
     endDate.setMinutes(endDate.getMinutes() + data.duration)
