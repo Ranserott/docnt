@@ -110,6 +110,11 @@ src/
 - [x] Server Actions para eventos
 - [x] Integración con cursos
 
+### ✅ Módulo de Asistencia
+- [x] Integración con portal UST
+- [x] Vista de acceso directo
+- [x] Historial de actividad
+
 ### 🚧 Pendiente
 - [ ] Formularios de creación/edición
 - [ ] Sistema de archivos y storage

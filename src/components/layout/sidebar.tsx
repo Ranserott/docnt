@@ -23,6 +23,7 @@ import {
   Menu,
   X,
   Clock,
+  Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -66,6 +67,12 @@ const navItems = [
     href: '/dashboard/grades',
     icon: CheckSquare,
     color: 'from-cyan-500 to-cyan-600',
+  },
+  {
+    title: 'Asistencia',
+    href: '/dashboard/attendance',
+    icon: Users,
+    color: 'from-indigo-500 to-indigo-600',
   },
   {
     title: 'Archivos',
