@@ -1,10 +1,16 @@
+/**
+ * Página de Horario Semanal - Nueva Implementación
+ */
+
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db/prisma'
-import { SimpleScheduleView } from '@/components/schedule/simple-schedule-view'
+import { WeeklySchedule } from '@/components/schedule/weekly-schedule'
+import { startOfWeek, endOfWeek } from 'date-fns'
 
 export const metadata = {
   title: 'Horario Semanal | DOCNT',
+  description: 'Gestiona tu horario de clases y eventos semanales',
 }
 
 export default async function SchedulePage() {
@@ -14,7 +20,7 @@ export default async function SchedulePage() {
     redirect('/login')
   }
 
-  // Obtener cursos del usuario
+  // Obtener cursos con secciones
   const courses = await prisma.course.findMany({
     where: { userId: session.user.id },
     include: {
@@ -26,37 +32,48 @@ export default async function SchedulePage() {
     orderBy: { name: 'asc' },
   })
 
-  // Obtener eventos de la semana actual
+  // Calcular rango de la semana actual
   const now = new Date()
-  const startOfWeek = new Date(now)
-  const day = startOfWeek.getDay()
-  const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1)
-  startOfWeek.setDate(diff)
-  startOfWeek.setHours(0, 0, 0, 0)
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
 
-  const endOfWeek = new Date(startOfWeek)
-  endOfWeek.setDate(endOfWeek.getDate() + 6)
-  endOfWeek.setHours(23, 59, 59, 999)
-
-  const events = await prisma.scheduleEvent.findMany({
+  // Obtener eventos recurrentes (horario semanal) y eventos de la semana
+  const events = await prisma.event.findMany({
     where: {
       userId: session.user.id,
       OR: [
+        // Eventos dentro de la semana actual
         {
-          startDate: { gte: startOfWeek, lte: endOfWeek },
+          AND: [
+            { startDate: { gte: weekStart } },
+            { startDate: { lte: weekEnd } },
+          ],
         },
+        // Eventos recurrentes (horario semanal)
         {
-          endDate: { gte: startOfWeek, lte: endOfWeek },
-        },
-        {
-          startDate: { lte: startOfWeek },
-          endDate: { gte: endOfWeek },
+          isRecurring: true,
+          OR: [
+            { recurrenceEnd: null },
+            { recurrenceEnd: { gte: weekStart } },
+          ],
         },
       ],
     },
     include: {
-      course: true,
-      section: true,
+      course: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          color: true,
+        },
+      },
+      section: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: { startDate: 'asc' },
   })
@@ -64,13 +81,15 @@ export default async function SchedulePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Horario Semanal</h1>
-        <p className="text-slate-600 dark:text-slate-400">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          Horario Semanal
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">
           Gestiona tu horario de clases y eventos
         </p>
       </div>
 
-      <SimpleScheduleView
+      <WeeklySchedule
         initialEvents={events}
         courses={courses}
       />
