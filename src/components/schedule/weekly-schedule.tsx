@@ -5,7 +5,7 @@ import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'dat
 import { es } from 'date-fns/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Plus, MapPin, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MapPin, Trash2, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/cn'
 import { Input } from '@/components/ui/input'
@@ -154,7 +154,7 @@ export function WeeklySchedule({ initialEvents, courses }: WeeklyScheduleProps) 
       const result = await createScheduleBlock({
         courseId: formData.courseId || undefined,
         sectionId: formData.sectionId || undefined,
-        title: formData.title ? formData.title : undefined,
+        title: formData.title || '',
         type: formData.type,
         location: formData.location || undefined,
         dayOfWeek: parseInt(formData.dayOfWeek),

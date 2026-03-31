@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { getCourses } from '@/lib/actions/course.actions'
 import { getExams } from '@/lib/actions/exam.actions'
 import { getGrades, getGradingRubric, upsertGrade, upsertGradingRubric } from '@/lib/actions/grade.actions'
-import { getStudents, createStudent } from '@/lib/actions/student.actions'
+import { getStudents } from '@/lib/actions/student.actions'
 
 type Status = 'pending' | 'graded' | 'auto_graded'
 
@@ -38,13 +38,9 @@ export default function GradesPage() {
   const [loading, setLoading] = useState(false)
 
   // Dialogs
-  const [studentDialogOpen, setStudentDialogOpen] = useState(false)
   const [rubricDialogOpen, setRubricDialogOpen] = useState(false)
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false)
   const [selectedGrade, setSelectedGrade] = useState<any>(null)
-
-  // Formularios
-  const [studentForm, setStudentForm] = useState({ name: '', email: '', studentCode: '' })
 
   // Pauta visual - lista de preguntas
   const [rubricForm, setRubricForm] = useState({
@@ -238,19 +234,6 @@ export default function GradesPage() {
     const result = await getGradingRubric(selectedExamId)
     if (result.data) {
       setRubric(result.data)
-    }
-  }
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const result = await createStudent({
-      ...studentForm,
-      courseId: selectedCourseId,
-    })
-    if (result.data) {
-      setStudentForm({ name: '', email: '', studentCode: '' })
-      setStudentDialogOpen(false)
-      loadStudents()
     }
   }
 
@@ -463,16 +446,6 @@ export default function GradesPage() {
 
         <div className="flex gap-2 sm:gap-3">
           <Button
-            onClick={() => setStudentDialogOpen(true)}
-            disabled={!selectedCourseId}
-            className="flex-1 sm:flex-none h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50"
-          >
-            <Users className="mr-2 h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Agregar</span>
-            <span className="sm:hidden">Alumno</span>
-          </Button>
-
-          <Button
             onClick={() => setRubricDialogOpen(true)}
             disabled={!selectedExamId}
             className="flex-1 sm:flex-none h-11 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
@@ -509,12 +482,7 @@ export default function GradesPage() {
               <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No hay alumnos en este curso</p>
-                <Button
-                  onClick={() => setStudentDialogOpen(true)}
-                  className="mt-4 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white"
-                >
-                  Agregar primer alumno
-                </Button>
+                <p className="text-sm mt-2">Agrega alumnos desde el módulo de Cursos</p>
               </div>
             ) : (
               <div className="overflow-x-auto -mx-4 lg:mx-0">
@@ -580,57 +548,6 @@ export default function GradesPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Dialog: Agregar Alumno */}
-      <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
-        <DialogContent className="max-w-md w-[95vw]">
-          <DialogHeader>
-            <DialogTitle>Agregar Alumno</DialogTitle>
-            <DialogDescription>
-              Agrega un nuevo alumno al curso
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateStudent} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Nombre *</Label>
-              <Input
-                id="name"
-                value={studentForm.name}
-                onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
-                required
-                className="rounded-xl"
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={studentForm.email}
-                onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
-            <div>
-              <Label htmlFor="studentCode">Código / RUT</Label>
-              <Input
-                id="studentCode"
-                value={studentForm.studentCode}
-                onChange={(e) => setStudentForm({ ...studentForm, studentCode: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setStudentDialogOpen(false)} className="rounded-xl">
-                Cancelar
-              </Button>
-              <Button type="submit" className="rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white">
-                Agregar
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Dialog: Configurar Pauta */}
       <Dialog open={rubricDialogOpen} onOpenChange={(open) => {
