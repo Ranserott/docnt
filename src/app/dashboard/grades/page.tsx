@@ -11,11 +11,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, CheckSquare, Camera, Save, Users, FileText, Upload, Eye, Image as ImageIcon, X, Trash2 } from 'lucide-react'
+import { Plus, CheckSquare, Camera, Save, Users, FileText, Upload, Eye, Image as ImageIcon, X, Trash2, Pencil } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getCourses } from '@/lib/actions/course.actions'
 import { getExams } from '@/lib/actions/exam.actions'
-import { getGrades, getGradingRubric, upsertGrade, upsertGradingRubric } from '@/lib/actions/grade.actions'
+import { getGrades, getGradingRubric, upsertGrade, upsertGradingRubric, deleteGrade } from '@/lib/actions/grade.actions'
 import { getStudents } from '@/lib/actions/student.actions'
 
 type Status = 'pending' | 'graded' | 'auto_graded'
@@ -390,6 +390,32 @@ export default function GradesPage() {
     setLoading(false)
   }
 
+  const handleDeleteGrade = async (studentId: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta nota?')) return
+
+    setLoading(true)
+    try {
+      await deleteGrade(selectedExamId, studentId)
+      loadGrades()
+      alert('Nota eliminada')
+    } catch (error) {
+      alert('Error al eliminar la nota')
+    }
+    setLoading(false)
+  }
+
+  const handleEditGrade = (student: any, grade: any) => {
+    setSelectedGrade({ student, grade })
+    if (grade) {
+      setManualGradeForm({
+        score: grade.score?.toString() || '',
+        grade: grade.grade?.toString() || '',
+      })
+    }
+    setGradeMode('manual')
+    setGradeDialogOpen(true)
+  }
+
   const selectedCourse = courses.find((c) => c.id === selectedCourseId)
   const selectedExam = exams.find((e) => e.id === selectedExamId)
 
@@ -526,17 +552,34 @@ export default function GradesPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedGrade({ student, grade })
-                                setGradeDialogOpen(true)
-                              }}
-                              className="rounded-lg"
-                            >
-                              {grade ? <Eye className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              {grade && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditGrade(student, grade)}
+                                  className="h-8 w-8 p-0 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (grade) {
+                                    handleDeleteGrade(student.id)
+                                  } else {
+                                    setSelectedGrade({ student, grade: null })
+                                    setGradeMode('manual')
+                                    setGradeDialogOpen(true)
+                                  }
+                                }}
+                                className="h-8 w-8 p-0 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                {grade ? <Trash2 className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )
