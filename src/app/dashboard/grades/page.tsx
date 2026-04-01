@@ -500,20 +500,6 @@ export default function GradesPage() {
                   {students.length} {students.length === 1 ? 'alumno' : 'alumnos'} • {rubric ? 'Pauta configurada' : 'Sin pauta configurada'}
                 </CardDescription>
               </div>
-              <Button
-                onClick={() => {
-                  setSelectedGrade(null)
-                  setIsAddingGrade(true)
-                  setGradeMode('manual')
-                  setManualGradeForm({ score: '', grade: '' })
-                  setGradeDialogOpen(true)
-                }}
-                className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Ingresar Nota</span>
-                <span className="sm:hidden">Nota</span>
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -566,34 +552,41 @@ export default function GradesPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              {grade && (
+                              {!grade ? (
                                 <Button
-                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => handleEditGrade(student, grade)}
-                                  className="h-8 w-8 p-0 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  if (grade) {
-                                    handleDeleteGrade(student.id)
-                                  } else {
+                                  onClick={() => {
                                     setSelectedGrade({ student, grade: null })
                                     setIsAddingGrade(true)
                                     setGradeMode('manual')
                                     setManualGradeForm({ score: '', grade: '' })
                                     setGradeDialogOpen(true)
-                                  }
-                                }}
-                                className="h-8 w-8 p-0 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                {grade ? <Trash2 className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
-                              </Button>
+                                  }}
+                                  className="h-8 px-3 rounded-lg bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 text-xs font-medium"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Agregar
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditGrade(student, grade)}
+                                    className="h-8 w-8 p-0 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteGrade(student.id)}
+                                    className="h-8 w-8 p-0 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
