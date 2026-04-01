@@ -25,7 +25,7 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [studentForm, setStudentForm] = useState({ name: '', email: '', studentCode: '' })
+  const [studentForm, setStudentForm] = useState({ name: '' })
 
   const loadCourses = async () => {
     setLoading(true)
@@ -60,7 +60,7 @@ export default function CoursesPage() {
       courseId: selectedCourse.id,
     })
     if (result.data) {
-      setStudentForm({ name: '', email: '', studentCode: '' })
+      setStudentForm({ name: '' })
       loadStudents(selectedCourse.id)
     }
   }
@@ -204,7 +204,7 @@ export default function CoursesPage() {
           {/* Formulario para agregar alumno */}
           <form onSubmit={handleCreateStudent} className="space-y-4 mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800">
             <h3 className="font-semibold text-sm">Agregar Nuevo Alumno</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
                 <Label htmlFor="student-name">Nombre *</Label>
                 <Input
@@ -213,27 +213,6 @@ export default function CoursesPage() {
                   onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
                   placeholder="Nombre completo"
                   required
-                  className="rounded-xl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="student-email">Email</Label>
-                <Input
-                  id="student-email"
-                  type="email"
-                  value={studentForm.email}
-                  onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
-                  placeholder="email@ejemplo.com"
-                  className="rounded-xl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="student-code">RUT / Código</Label>
-                <Input
-                  id="student-code"
-                  value={studentForm.studentCode}
-                  onChange={(e) => setStudentForm({ ...studentForm, studentCode: e.target.value })}
-                  placeholder="12.345.678-9"
                   className="rounded-xl"
                 />
               </div>
@@ -256,8 +235,6 @@ export default function CoursesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>RUT / Código</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -265,8 +242,6 @@ export default function CoursesPage() {
                   {students.map((student) => (
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">{student.name}</TableCell>
-                      <TableCell>{student.email || '-'}</TableCell>
-                      <TableCell>{student.studentCode || '-'}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"

@@ -41,6 +41,7 @@ export default function GradesPage() {
   const [rubricDialogOpen, setRubricDialogOpen] = useState(false)
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false)
   const [selectedGrade, setSelectedGrade] = useState<any>(null)
+  const [isAddingGrade, setIsAddingGrade] = useState(false)
 
   // Pauta visual - lista de preguntas
   const [rubricForm, setRubricForm] = useState({
@@ -368,22 +369,27 @@ export default function GradesPage() {
       return
     }
 
+    // Usar el estudiante seleccionado o el primero si no hay seleccionado
+    const studentId = selectedGrade?.student?.id || students[0]?.id
+    if (!studentId) {
+      alert('No hay alumno seleccionado')
+      return
+    }
+
     setLoading(true)
     try {
-      const student = students[0]
-      if (student) {
-        await upsertGrade({
-          examId: selectedExamId,
-          studentId: student.id,
-          score: score,
-          grade: grade,
-          status: 'manual',
-        })
-        loadGrades()
-        setGradeDialogOpen(false)
-        setManualGradeForm({ score: '', grade: '' })
-        alert(`Nota guardada: ${grade}`)
-      }
+      await upsertGrade({
+        examId: selectedExamId,
+        studentId: studentId,
+        score: score,
+        grade: grade,
+        status: 'graded',
+      })
+      loadGrades()
+      setGradeDialogOpen(false)
+      setIsAddingGrade(false)
+      setManualGradeForm({ score: '', grade: '' })
+      alert(`Nota guardada: ${grade}`)
     } catch (error) {
       alert('Error al guardar la nota')
     }
@@ -406,6 +412,7 @@ export default function GradesPage() {
 
   const handleEditGrade = (student: any, grade: any) => {
     setSelectedGrade({ student, grade })
+    setIsAddingGrade(false)
     if (grade) {
       setManualGradeForm({
         score: grade.score?.toString() || '',
@@ -494,12 +501,18 @@ export default function GradesPage() {
                 </CardDescription>
               </div>
               <Button
-                onClick={() => setGradeDialogOpen(true)}
+                onClick={() => {
+                  setSelectedGrade(null)
+                  setIsAddingGrade(true)
+                  setGradeMode('manual')
+                  setManualGradeForm({ score: '', grade: '' })
+                  setGradeDialogOpen(true)
+                }}
                 className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
               >
-                <Camera className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Corregir con IA</span>
-                <span className="sm:hidden">Corregir</span>
+                <Plus className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Ingresar Nota</span>
+                <span className="sm:hidden">Nota</span>
               </Button>
             </div>
           </CardHeader>
@@ -571,7 +584,9 @@ export default function GradesPage() {
                                     handleDeleteGrade(student.id)
                                   } else {
                                     setSelectedGrade({ student, grade: null })
+                                    setIsAddingGrade(true)
                                     setGradeMode('manual')
+                                    setManualGradeForm({ score: '', grade: '' })
                                     setGradeDialogOpen(true)
                                   }
                                 }}
@@ -835,42 +850,53 @@ export default function GradesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Corregir con IA */}
+      {/* Dialog: Ingresar Nota */}
       <Dialog open={gradeDialogOpen} onOpenChange={(open) => {
         setGradeDialogOpen(open)
-        if (!open) clearImage()
+        if (!open) {
+          clearImage()
+          setIsAddingGrade(false)
+        }
       }}>
         <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Ingresar Notas</DialogTitle>
+            <DialogTitle>
+              {isAddingGrade && selectedGrade?.student
+                ? `Ingresar Nota - ${selectedGrade.student.name}`
+                : selectedGrade?.grade
+                ? `Editar Nota - ${selectedGrade.student?.name}`
+                : 'Ingresar Nota'}
+            </DialogTitle>
             <DialogDescription>
-              Corrige automáticamente con IA o ingresa las notas manualmente
+              Ingresa el puntaje y la nota final del alumno
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Selector de modo */}
-            <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-              <button
-                onClick={() => setGradeMode('auto')}
-                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                  gradeMode === 'auto'
-                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                🤖 Corregir con IA
-              </button>
-              <button
-                onClick={() => setGradeMode('manual')}
-                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                  gradeMode === 'manual'
-                    ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                ✏️ Ingreso Manual
-              </button>
-            </div>
+            {/* Selector de modo - solo mostrar si NO estamos en modo agregar rapido */}
+            {!isAddingGrade && (
+              <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                <button
+                  onClick={() => setGradeMode('auto')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                    gradeMode === 'auto'
+                      ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  🤖 Corregir con IA
+                </button>
+                <button
+                  onClick={() => setGradeMode('manual')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                    gradeMode === 'manual'
+                      ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  ✏️ Ingreso Manual
+                </button>
+              </div>
+            )}
 
             {/* Modo IA */}
             {gradeMode === 'auto' && (
