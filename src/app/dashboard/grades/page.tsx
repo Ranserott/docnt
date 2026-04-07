@@ -70,6 +70,7 @@ export default function GradesPage() {
   const [manualGradeForm, setManualGradeForm] = useState({
     score: '',
     grade: '',
+    tenths: '',
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -358,6 +359,7 @@ export default function GradesPage() {
     // Validar campos
     const score = parseFloat(manualGradeForm.score)
     const grade = parseFloat(manualGradeForm.grade)
+    const tenths = parseFloat(manualGradeForm.tenths) || 0
 
     if (isNaN(score) || score < 0) {
       alert('Por favor ingresa un puntaje válido')
@@ -369,12 +371,19 @@ export default function GradesPage() {
       return
     }
 
+    if (tenths < 0 || tenths > 1.0) {
+      alert('Las décimas deben estar entre 0.0 y 1.0')
+      return
+    }
+
     // Usar el estudiante seleccionado o el primero si no hay seleccionado
     const studentId = selectedGrade?.student?.id || students[0]?.id
     if (!studentId) {
       alert('No hay alumno seleccionado')
       return
     }
+
+    const finalGrade = grade + tenths
 
     setLoading(true)
     try {
@@ -383,13 +392,14 @@ export default function GradesPage() {
         studentId: studentId,
         score: score,
         grade: grade,
+        tenths: tenths,
         status: 'graded',
       })
       loadGrades()
       setGradeDialogOpen(false)
       setIsAddingGrade(false)
-      setManualGradeForm({ score: '', grade: '' })
-      alert(`Nota guardada: ${grade}`)
+      setManualGradeForm({ score: '', grade: '', tenths: '' })
+      alert(`Nota guardada\nExamen: ${grade}\nDécimas: +${tenths}\nFinal: ${finalGrade.toFixed(1)}`)
     } catch (error) {
       alert('Error al guardar la nota')
     }
@@ -417,6 +427,7 @@ export default function GradesPage() {
       setManualGradeForm({
         score: grade.score?.toString() || '',
         grade: grade.grade?.toString() || '',
+        tenths: grade.tenths?.toString() || '',
       })
     }
     setGradeMode('manual')
@@ -517,6 +528,8 @@ export default function GradesPage() {
                       <TableHead>Alumno</TableHead>
                       <TableHead>Puntaje</TableHead>
                       <TableHead>Nota</TableHead>
+                      <TableHead>Décimas</TableHead>
+                      <TableHead>Final</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
@@ -524,6 +537,9 @@ export default function GradesPage() {
                   <TableBody>
                     {students.map((student) => {
                       const grade = grades.find((g) => g.studentId === student.id)
+                      const examGrade = grade?.grade || 0
+                      const tenths = grade?.tenths || 0
+                      const finalGrade = examGrade + tenths
                       return (
                         <TableRow key={student.id}>
                           <TableCell className="font-medium">{student.name}</TableCell>
@@ -532,6 +548,12 @@ export default function GradesPage() {
                           </TableCell>
                           <TableCell>
                             {grade?.grade ? grade.grade.toFixed(1) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {grade?.tenths ? `+${grade.tenths.toFixed(1)}` : '-'}
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            {grade?.grade ? finalGrade.toFixed(1) : '-'}
                           </TableCell>
                           <TableCell>
                             {grade?.status === 'auto_graded' && (
@@ -559,7 +581,7 @@ export default function GradesPage() {
                                     setSelectedGrade({ student, grade: null })
                                     setIsAddingGrade(true)
                                     setGradeMode('manual')
-                                    setManualGradeForm({ score: '', grade: '' })
+                                    setManualGradeForm({ score: '', grade: '', tenths: '' })
                                     setGradeDialogOpen(true)
                                   }}
                                   className="h-8 px-3 rounded-lg bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 text-xs font-medium"
@@ -1010,7 +1032,7 @@ export default function GradesPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="manual-grade">Nota Final (1.0 - 7.0)</Label>
+                    <Label htmlFor="manual-grade">Nota Examen (1.0 - 7.0)</Label>
                     <Input
                       id="manual-grade"
                       type="number"
@@ -1023,6 +1045,33 @@ export default function GradesPage() {
                       className="rounded-xl"
                     />
                   </div>
+
+                  <div>
+                    <Label htmlFor="manual-tenths">Décimas (0.0 - 1.0)</Label>
+                    <Input
+                      id="manual-tenths"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="1"
+                      value={manualGradeForm.tenths}
+                      onChange={(e) => setManualGradeForm({ ...manualGradeForm, tenths: e.target.value })}
+                      placeholder="Ej: 0.6"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  {/* Preview de nota final */}
+                  {manualGradeForm.grade && (
+                    <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                      <p className="text-sm text-purple-800 dark:text-purple-200">
+                        📊 Nota Final: <strong>{((parseFloat(manualGradeForm.grade) || 0) + (parseFloat(manualGradeForm.tenths) || 0)).toFixed(1)}</strong>
+                        {manualGradeForm.tenths && manualGradeForm.grade && (
+                          <span className="text-xs ml-2">({manualGradeForm.grade} + {manualGradeForm.tenths})</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Escala de referencia rápida */}
                   <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -1040,7 +1089,7 @@ export default function GradesPage() {
             )}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setGradeDialogOpen(false); clearImage(); setManualGradeForm({ score: '', grade: '' }) }} className="rounded-xl">
+              <Button type="button" variant="outline" onClick={() => { setGradeDialogOpen(false); clearImage(); setManualGradeForm({ score: '', grade: '', tenths: '' }) }} className="rounded-xl">
                 Cancelar
               </Button>
               {gradeMode === 'auto' ? (

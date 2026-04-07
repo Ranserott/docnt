@@ -368,7 +368,8 @@ model Student {
 model Grade {
   id          String   @id @default(cuid())
   score       Float    // Puntaje obtenido
-  grade       Float?   // Nota final (1.0 - 7.0)
+  grade       Float?   // Nota del examen (1.0 - 7.0)
+  tenths      Float?   // Décimas por trabajos extra (0.0 - 1.0)
   status      String   @default("pending") // pending, graded, auto_graded
 
   // Respuestas del alumno (imagen o JSON)

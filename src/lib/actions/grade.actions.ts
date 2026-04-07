@@ -99,6 +99,7 @@ export async function upsertGrade(data: {
   studentId: string
   score: number
   grade?: number
+  tenths?: number
   status?: string
   answersUrl?: string
   answersData?: any
@@ -133,6 +134,7 @@ export async function upsertGrade(data: {
         studentId: data.studentId,
         score: data.score,
         grade: data.grade,
+        tenths: data.tenths,
         status: data.status || 'graded',
         answersUrl: data.answersUrl,
         answersData: data.answersData,
@@ -142,6 +144,7 @@ export async function upsertGrade(data: {
       update: {
         score: data.score,
         grade: data.grade,
+        tenths: data.tenths,
         status: data.status || 'graded',
         answersUrl: data.answersUrl,
         answersData: data.answersData,
